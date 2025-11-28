@@ -1,10 +1,26 @@
-Write-Host "Restarting Airflow..." -ForegroundColor Yellow
-docker compose down
-Write-Host "Waiting 3 seconds..." -ForegroundColor Gray
-Start-Sleep -Seconds 3
-docker compose up -d postgres
-Write-Host "Waiting for postgres to be ready..." -ForegroundColor Yellow
+# Перезапуск Airflow (остановка и запуск)
+Write-Host "🔄 Перезапуск Airflow..." -ForegroundColor Yellow
+
+# Проверяем наличие docker-compose
+if (-not (Get-Command docker-compose -ErrorAction SilentlyContinue)) {
+    Write-Host "❌ docker-compose не найден. Пожалуйста, установите Docker." -ForegroundColor Red
+    exit 1
+}
+
+# Остановляем контейнеры
+Write-Host "⏹️  Остановка контейнеров..." -ForegroundColor Cyan
+docker-compose down
+
+# Запускаем контейнеры заново
+Write-Host "🚀 Запуск контейнеров..." -ForegroundColor Green
+docker-compose up -d
+
+# Ждем инициализации
+Write-Host "⏳ Ожидание инициализации сервисов..." -ForegroundColor Cyan
 Start-Sleep -Seconds 5
-docker compose up -d webserver scheduler
-Write-Host "Airflow restarted!" -ForegroundColor Green
-Write-Host "Access webserver at http://localhost:8080" -ForegroundColor Cyan
+
+Write-Host "✅ Перезапуск завершен!" -ForegroundColor Green
+
+# Показываем статус
+Write-Host "`n📦 Статус контейнеров:" -ForegroundColor Yellow
+docker-compose ps
