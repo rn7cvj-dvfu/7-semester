@@ -1,9 +1,8 @@
 import logging
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from airflow.decorators import dag, task
-from airflow.utils.dates import days_ago
 from airflow.models import Variable
 import psycopg2
 from psycopg2.extras import execute_values
@@ -201,13 +200,13 @@ def save_to_postgres_task(df_json):
     dag_id='weather_vladivostok_dag',
     description='Сбор данных о погоде во Владивостоке',
     schedule_interval='*/30 * * * *',  # Каждые 30 минут
-    start_date=days_ago(0),
+    start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['weather', 'openweathermap'],
     default_args={
         'owner': 'airflow',
         'retries': 2,
-        'retry_delay': {'minutes': 5},
+        'retry_delay': timedelta(minutes=5),
     }
 )
 def weather_pipeline():
