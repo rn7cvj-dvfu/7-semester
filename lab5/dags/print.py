@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from airflow.sdk import dag, task
+from airflow.decorators import dag, task
 
 logger = logging.getLogger(__name__)
 
@@ -10,26 +10,24 @@ default_args = {
     'retry_delay': timedelta(minutes=1),
 }
 
+
+
 @dag(
-    dag_id='print_log_dag',
-    description='Print log every minute',
-    schedule='* * * * *',  # Every minute
+    dag_id="print_log_dag",
+    is_paused_upon_creation=True,
     start_date=datetime.now(),
+    schedule="* * * * *",
     catchup=False,
-    tags=['logging', 'test'],
-    default_args=default_args,
+    tags=["print" , "log"] ,
 )
-def print_log_dag():
+def print_pipeline():
+
     @task
-    def print_message():
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        logger.info(f"📋 Log message at {timestamp}")
-        return f"Logged at {timestamp}"
-    
-    print_message()
+    def log():
+        timestamp = datetime.now().isoformat()
+        logger.info(f"Hello, World! Current timestamp: {timestamp}")
+        return f"Hello, World! Current timestamp: {timestamp}"
 
-# Инстанцировать DAG
-print_log_dag_instance = print_log_dag()
+    log()
 
-if __name__ == "__main__":
-    print_log_dag()
+instance = print_pipeline()
