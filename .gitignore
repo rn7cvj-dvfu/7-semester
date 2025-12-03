@@ -214,3 +214,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+lab1/lab1_example.ipynb
