@@ -216,3 +216,6 @@ __marimo__/
 .streamlit/secrets.toml
 lab1/lab1_example.ipynb
 lab2/lab2_example.ipynb
+
+
+*.DS_Store
