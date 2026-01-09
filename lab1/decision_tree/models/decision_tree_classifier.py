@@ -68,7 +68,6 @@ class DecisionTreeClassifier:
         if (depth >= self.max_depth or 
             n_samples < self.min_samples_split or 
             len(np.unique(y)) == 1):
-            # Возвращаем наиболее частый класс
             leaf_value = np.bincount(y.astype(int)).argmax()
             return TreeNode(value=float(leaf_value))
 
@@ -116,7 +115,7 @@ class DecisionTreeClassifier:
         best_feature = None
         best_threshold = None
 
-        # Определить признаки для рассмотрения
+        # Признаки для рассмотрения
         if self.max_features is None:
             features_to_consider = range(self.n_features)
         else:
@@ -126,7 +125,7 @@ class DecisionTreeClassifier:
                 replace=False
             )
 
-        # Перебрать признаки и пороговые значения
+        # Признаки и пороговые значения
         for feature_index in features_to_consider:
             feature_values = X[:, feature_index]
             thresholds = np.unique(feature_values)
