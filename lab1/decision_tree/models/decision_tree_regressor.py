@@ -1,8 +1,7 @@
 import numpy as np
 import abc as abc
-from typing import Union
 
-from ..metrics.tree_metrics import SplitMetric, MSESplitMetric
+from ..metrics.split_metrics import SplitMetric, MSESplitMetric
 from .utils.node import TreeNode
 
 
@@ -47,7 +46,7 @@ class DecisionTreeRegressor(DecisionTree):
         max_depth (int): Максимальная глубина дерева. По умолчанию 5.
         min_samples_split (int): Минимальное количество образцов для разбиения узла. По умолчанию 2.
         min_samples_leaf (int): Минимальное количество образцов в листовом узле. По умолчанию 1.
-        max_features (Union[int, None]): Максимальное количество признаков для рассмотрения при разбиении.
+        max_features (int | None): Максимальное количество признаков для рассмотрения при разбиении.
                                     None означает использовать все признаки. По умолчанию None.
         split_metric (SplitMetric): Метрика для оценки качества разбиения. По умолчанию MSESplitMetric.
     """
@@ -66,6 +65,7 @@ class DecisionTreeRegressor(DecisionTree):
         self.max_features = max_features
         self.split_metric = split_metric if split_metric is not None else MSESplitMetric()
         self.root = None
+        self.n_features = None
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         """

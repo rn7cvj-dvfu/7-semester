@@ -1,12 +1,11 @@
 import numpy as np
 import abc as abc
-from typing import Union
 
 from ..metrics.classification_metrics import ClassificationMetric, GiniMetric
 from .utils.node import TreeNode
 
 
-class DecisionTreeClassifier(abc.ABC):
+class DecisionTreeClassifier:
     """
     Дерево решений для задачи классификации.
 
@@ -14,7 +13,7 @@ class DecisionTreeClassifier(abc.ABC):
         max_depth (int): Максимальная глубина дерева. По умолчанию 5.
         min_samples_split (int): Минимальное количество образцов для разбиения узла. По умолчанию 2.
         min_samples_leaf (int): Минимальное количество образцов в листовом узле. По умолчанию 1.
-        max_features (Union[int, None]): Максимальное количество признаков для рассмотрения при разбиении.
+        max_features (int | None): Максимальное количество признаков для рассмотрения при разбиении.
                                     None означает использовать все признаки. По умолчанию None.
         split_metric (ClassificationMetric): Метрика для оценки качества разбиения. По умолчанию GiniMetric.
     """
@@ -34,6 +33,7 @@ class DecisionTreeClassifier(abc.ABC):
         self.split_metric = split_metric if split_metric is not None else GiniMetric()
         self.root = None
         self.classes_ = None
+        self.n_features = None
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         """

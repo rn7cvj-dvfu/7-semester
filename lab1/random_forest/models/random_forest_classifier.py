@@ -1,9 +1,7 @@
 import numpy as np
-import abc as abc
 from typing import Union
 
-from .decision_tree_classifier import DecisionTreeClassifier
-from ..metrics.classification_metrics import ClassificationMetric, GiniMetric
+from decision_tree import DecisionTreeClassifier, ClassificationMetric, GiniMetric
 
 
 class RandomForestClassifier:
