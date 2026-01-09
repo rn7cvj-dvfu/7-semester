@@ -150,7 +150,6 @@ class CustomComputeLinReg(CustomLinReg):
             predicitions = self.predict(self.features)
             error_value = error.calculate(self.target, predicitions)
 
-            # Проверка на NaN
             if np.isnan(error_value) or np.any(np.isnan(self.weights)) or np.isnan(self.bias):
                 raise ValueError(f"NaN detected at iteration {iteration}. Try reducing learning_rate.")
 
