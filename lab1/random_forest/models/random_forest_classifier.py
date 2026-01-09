@@ -96,7 +96,7 @@ class RandomForestClassifier:
         max_features = self._get_max_features(n_features)
 
         for _ in range(self.n_estimators):
-            # Создать дерево
+
             tree = DecisionTreeClassifier(
                 max_depth=self.max_depth,
                 min_samples_split=self.min_samples_split,
@@ -105,13 +105,12 @@ class RandomForestClassifier:
                 split_metric=self.split_metric
             )
 
-            # Создать бутстрэп-выборку (если требуется)
             if self.bootstrap:
                 X_sample, y_sample = self._bootstrap_sample(X, y)
             else:
                 X_sample, y_sample = X, y
 
-            # Обучить дерево
+  
             tree.fit(X_sample, y_sample)
             self.trees.append(tree)
 
@@ -131,10 +130,8 @@ class RandomForestClassifier:
         if not self.trees:
             raise ValueError("Model is not fitted yet.")
 
-        # Получить предсказания от каждого дерева
         tree_predictions = np.array([tree.predict(X) for tree in self.trees])
 
-        # Голосование большинством
         predictions = []
         for i in range(X.shape[0]):
             votes = tree_predictions[:, i]

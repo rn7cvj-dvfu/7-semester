@@ -117,7 +117,6 @@ class RandomForestRegressor(RandomForest):
         max_features = self._get_max_features()
 
         for _ in range(self.n_estimators):
-            # Создать бутстрэп-выборку
             if self.bootstrap:
                 indices = np.random.choice(n_samples, size=n_samples, replace=True)
                 X_bootstrap = X[indices]
@@ -126,7 +125,6 @@ class RandomForestRegressor(RandomForest):
                 X_bootstrap = X
                 y_bootstrap = y
 
-            # Создать и обучить дерево
             tree = DecisionTreeRegressor(
                 max_depth=self.max_depth,
                 min_samples_split=self.min_samples_split,
@@ -153,8 +151,7 @@ class RandomForestRegressor(RandomForest):
         if not self.trees:
             raise ValueError("Model is not fitted yet.")
 
-        # Собрать предсказания всех деревьев
+
         predictions = np.array([tree.predict(X) for tree in self.trees])
 
-        # Вернуть среднее значение
         return np.mean(predictions, axis=0)
