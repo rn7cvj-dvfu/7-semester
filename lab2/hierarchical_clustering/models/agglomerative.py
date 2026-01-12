@@ -2,7 +2,8 @@ import numpy as np
 from typing import Optional
 
 from .base import HierarchicalClustering
-from .linkage import DendrogramNode, Linkage
+from .utils.dendrogram import DendrogramNode
+from .utils.linkage import LinkageMethod, AverageLinkage
 from .utils.distance import DistanceMetric, EuclideanDistance, compute_distance_matrix
 
 
@@ -12,19 +13,19 @@ class AgglomerativeClustering(HierarchicalClustering):
     
     Args:
         X (np.ndarray): входные данные размера (n_samples, n_features)
-        linkage_method (str): метод связи ('single', 'complete', 'average', 'ward')
+        linkage_method (LinkageMethod): метод связи (экземпляр LinkageMethod)
         distance_metric (DistanceMetric): метрика расстояния
     """
     
     def __init__(
         self,
         X: np.ndarray,
-        linkage_method: str = 'average',
-        distance_metric: Optional[DistanceMetric] = None
+        linkage_method: Optional[LinkageMethod] = AverageLinkage(),
+        distance_metric: Optional[DistanceMetric] = EuclideanDistance()
     ):
         self.X = X
-        self.linkage_method = linkage_method
-        self.distance_metric = distance_metric if distance_metric is not None else EuclideanDistance()
+        self.linkage_method = linkage_method 
+        self.distance_metric = distance_metric 
         
         # Вычисляем матрицу расстояний
         self.distance_matrix = compute_distance_matrix(X, self.distance_metric)
@@ -74,11 +75,10 @@ class AgglomerativeClustering(HierarchicalClustering):
                     indices2 = current_clusters[cluster_id2]
                     
                     # Вычисляем расстояние между кластерами
-                    distance = Linkage.compute_linkage_distance(
+                    distance = self.linkage_method.compute(
                         indices1,
                         indices2,
-                        self.distance_matrix,
-                        self.linkage_method
+                        self.distance_matrix
                     )
                     
                     if distance < min_distance:
@@ -137,26 +137,37 @@ class AgglomerativeClustering(HierarchicalClustering):
         if self.dendrogram is None:
             raise RuntimeError("Model must be fitted first")
         
-        # Находим пороговое расстояние
-        if len(self.merge_history) < n_clusters:
-            n_clusters = len(self.merge_history) + 1
-        
+        # Обработка граничных случаев
         if n_clusters <= 1:
             return np.zeros(self.n_samples, dtype=int)
         
-        # Сортируем историю объединений по расстоянию
+        if n_clusters >= self.n_samples:
+            return np.arange(self.n_samples, dtype=int)
+        
+        # Находим пороговое расстояние
+        if len(self.merge_history) < n_clusters - 1:
+            n_clusters = len(self.merge_history) + 1
+        
+        # Сортируем историю объединений по расстоянию в порядке возрастания
         sorted_merges = sorted(self.merge_history, key=lambda x: x['distance'])
         
-        # Пороговое расстояние - это расстояние n_clusters-го объединения
-        threshold = sorted_merges[len(self.merge_history) - n_clusters]['distance']
+        # Пороговое расстояние - это расстояние между (n_clusters-1)-м и n_clusters-м объединениями
+        # Мы останавливаемся до объединения на позиции n_clusters-1
+        threshold = sorted_merges[len(sorted_merges) - n_clusters + 1]['distance']
         
         # Рекурсивно разрезаем дендрограмму
         cluster_assignment = np.zeros(self.n_samples, dtype=int)
         cluster_id = [0]  # Используем список для изменения в вложенной функции
         
         def cut_tree(node: DendrogramNode):
-            if node.distance > threshold or (node.left_child is None and node.right_child is None):
-                # Это один из кластеров после разреза
+            # Если листовой узел или расстояние объединения <= порога, это кластер
+            if node.left_child is None and node.right_child is None:
+                # Листовой узел - это отдельная точка
+                for idx in node.get_all_indices():
+                    cluster_assignment[idx] = cluster_id[0]
+                cluster_id[0] += 1
+            elif node.distance <= threshold:
+                # Расстояние объединения меньше или равно порогу - это кластер
                 for idx in node.get_all_indices():
                     cluster_assignment[idx] = cluster_id[0]
                 cluster_id[0] += 1

@@ -1,7 +1,7 @@
 import numpy as np
 import abc
 
-from .linkage import DendrogramNode
+from .utils.dendrogram import DendrogramNode
 
 
 class HierarchicalClustering(abc.ABC):

@@ -2,7 +2,8 @@ import numpy as np
 from typing import Optional
 
 from .base import HierarchicalClustering
-from .linkage import DendrogramNode, Linkage
+from .utils.dendrogram import DendrogramNode
+from .utils.linkage import LinkageMethod, AverageLinkage
 from .utils.distance import DistanceMetric, EuclideanDistance, compute_distance_matrix
 
 
@@ -12,19 +13,19 @@ class DivisiveClustering(HierarchicalClustering):
     
     Args:
         X (np.ndarray): входные данные размера (n_samples, n_features)
-        linkage_method (str): метод связи ('single', 'complete', 'average', 'ward')
+        linkage_method (LinkageMethod): метод связи (экземпляр LinkageMethod)
         distance_metric (DistanceMetric): метрика расстояния
     """
     
     def __init__(
         self,
         X: np.ndarray,
-        linkage_method: str = 'average',
-        distance_metric: Optional[DistanceMetric] = None
+        linkage_method: Optional[LinkageMethod] = AverageLinkage(),
+        distance_metric: Optional[DistanceMetric] = EuclideanDistance()
     ):
         self.X = X
         self.linkage_method = linkage_method
-        self.distance_metric = distance_metric if distance_metric is not None else EuclideanDistance()
+        self.distance_metric = distance_metric
         
         # Вычисляем матрицу расстояний
         self.distance_matrix = compute_distance_matrix(X, self.distance_metric)
@@ -125,11 +126,10 @@ class DivisiveClustering(HierarchicalClustering):
                 continue
             
             # Вычисляем расстояние между кластерами
-            distance = Linkage.compute_linkage_distance(
+            distance = self.linkage_method.compute(
                 cluster1,
                 cluster2,
-                self.distance_matrix,
-                self.linkage_method
+                self.distance_matrix
             )
             
             # Создаем узлы для подкластеров

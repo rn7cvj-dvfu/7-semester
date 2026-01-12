@@ -4,7 +4,15 @@ Hierarchical Clustering module
 
 from .models.agglomerative import AgglomerativeClustering
 from .models.divisive import DivisiveClustering
-from .models.linkage import DendrogramNode, Linkage
+from .models.utils.dendrogram import DendrogramNode
+from .models.utils.linkage import (
+    LinkageMethod,
+    SingleLinkage,
+    CompleteLinkage,
+    AverageLinkage,
+    WardLinkage,
+    get_linkage_method
+)
 from .models.utils.distance import (
     DistanceMetric,
     EuclideanDistance,
@@ -17,7 +25,12 @@ __all__ = [
     'AgglomerativeClustering',
     'DivisiveClustering',
     'DendrogramNode',
-    'Linkage',
+    'LinkageMethod',
+    'SingleLinkage',
+    'CompleteLinkage',
+    'AverageLinkage',
+    'WardLinkage',
+    'get_linkage_method',
     'DistanceMetric',
     'EuclideanDistance',
     'ManhattanDistance',
