@@ -1,5 +1,6 @@
 import numpy as np
 import abc as abc
+from typing import Optional
 
 class KMeansHistoryWriter(abc.ABC):
     """
@@ -99,7 +100,7 @@ class KMeansHistoryWriterFile(KMeansHistoryWriter):
 
     Args:
         file_path (str): Путь к json файлу для записи истории.
-        save_on_iteration (int | None): Интервал итераций для записи истории. Если None, то запись происходит в конце.
+        save_on_iteration (Optional[int]): Интервал итераций для записи истории. Если None, то запись происходит в конце.
 
     Returns:
         None
@@ -107,14 +108,14 @@ class KMeansHistoryWriterFile(KMeansHistoryWriter):
     """
     def __init__(self, 
                  file_path: str,
-                 save_on_iteration: int | None = None
+                 save_on_iteration: Optional[int] = None
                 ) -> None:
         
         assert file_path.endswith('.json'), "file_path должен оканчиваться на .json"
 
-        self.history : list[dict] = []
+        self.history : list = []
         self.file_path : str = file_path
-        self.save_on_iteration : int | None = save_on_iteration
+        self.save_on_iteration : Optional[int] = save_on_iteration
         
 
     
