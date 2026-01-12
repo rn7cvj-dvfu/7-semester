@@ -180,20 +180,48 @@ class DivisiveClustering(HierarchicalClustering):
         if n_clusters <= 1:
             return np.zeros(self.n_samples, dtype=int)
         
+        if n_clusters >= self.n_samples:
+            return np.arange(self.n_samples, dtype=int)
+        
+        # Собираем все расстояния разбиения
+        split_distances = []
+        for split in self.split_history:
+            split_distances.append(split['distance'])
+        
+        # Сортируем в порядке убывания (самые большие разбиения первыми)
+        split_distances.sort(reverse=True)
+        
+        # Выбираем порог: берем среднее между (n_clusters-1)-м и n_clusters-м разбиением
+        if n_clusters - 1 < len(split_distances):
+            if n_clusters < len(split_distances):
+                threshold = (split_distances[n_clusters - 1] + split_distances[n_clusters]) / 2.0
+            else:
+                threshold = split_distances[n_clusters - 1] - 0.001
+        else:
+            threshold = -np.inf
+        
         # Рекурсивно проходим по дереву и собираем кластеры
         cluster_assignment = np.zeros(self.n_samples, dtype=int)
         cluster_id = [0]
         
-        def collect_clusters(node: DendrogramNode, depth: int = 0):
-            # Если это листовой узел или достигли нужного количества кластеров
-            if node.left_child is None or node.right_child is None or cluster_id[0] >= n_clusters:
+        def collect_clusters(node: DendrogramNode):
+            # Если это листовой узел (нет потомков)
+            if node.left_child is None or node.right_child is None:
+                for idx in node.get_all_indices():
+                    cluster_assignment[idx] = cluster_id[0]
+                cluster_id[0] += 1
+                return
+            
+            # Если расстояние разбиения меньше порога, останавливаемся
+            # (т.е. не продолжаем разбивать этот кластер)
+            if node.distance < threshold:
                 for idx in node.get_all_indices():
                     cluster_assignment[idx] = cluster_id[0]
                 cluster_id[0] += 1
             else:
                 # Продолжаем разбиение
-                collect_clusters(node.left_child, depth + 1)
-                collect_clusters(node.right_child, depth + 1)
+                collect_clusters(node.left_child)
+                collect_clusters(node.right_child)
         
         collect_clusters(self.dendrogram)
         
