@@ -20,179 +20,168 @@ class AgglomerativeClustering(HierarchicalClustering):
     def __init__(
         self,
         X: np.ndarray,
-        linkage_method: Optional[LinkageMethod] = AverageLinkage(),
-        distance_metric: Optional[DistanceMetric] = EuclideanDistance()
+        linkage_method: LinkageMethod = AverageLinkage(),
+        distance_metric: DistanceMetric = EuclideanDistance()
     ):
         self.X = X
         self.linkage_method = linkage_method 
-        self.distance_metric = distance_metric 
-        
-        # Вычисляем матрицу расстояний
-        self.distance_matrix = compute_distance_matrix(X, self.distance_metric)
-        
-        # Инициализируем кластеры - каждая точка это отдельный кластер
+        self.distance_metric = distance_metric
         self.n_samples = X.shape[0]
-        self.clusters = {i: np.array([i]) for i in range(self.n_samples)}
-        
-        # История объединения кластеров для построения дендрограммы
-        self.merge_history = []
-        
-        # Дендрограмма
-        self.dendrogram = None
+        self.dendrogram: Optional[DendrogramNode] = None
+
+        self.nodes: list[DendrogramNode] = [
+            DendrogramNode(index=i) for i in range(self.n_samples)
+        ]
+
+       
     
     def fit(self) -> None:
         """
-        Выполняет агломеративную кластеризацию
-        
-        Args:
-            None
-        
-        Returns:
-            None
+        Построение дендрограммы с использованием агломеративной кластеризации
         """
-        
-        # Создаем узлы для каждой точки данных
-        nodes = {i: DendrogramNode(i, point_indices=np.array([i])) 
-                for i in range(self.n_samples)}
-        
-        current_clusters = self.clusters.copy()
-        node_index = self.n_samples
-        
-        # Объединяем кластеры до тех пор, пока не останется один
+        distance_matrix = compute_distance_matrix(self.X, self.distance_metric)
+
+        current_clusters = list(range(self.n_samples))
+
         while len(current_clusters) > 1:
             # Находим два ближайших кластера
-            min_distance = float('inf')
-            merge_pair = None
-            
-            cluster_ids = list(current_clusters.keys())
-            
-            for i in range(len(cluster_ids)):
-                for j in range(i + 1, len(cluster_ids)):
-                    cluster_id1 = cluster_ids[i]
-                    cluster_id2 = cluster_ids[j]
-                    
-                    indices1 = current_clusters[cluster_id1]
-                    indices2 = current_clusters[cluster_id2]
-                    
-                    # Вычисляем расстояние между кластерами
-                    distance = self.linkage_method.compute(
-                        indices1,
-                        indices2,
-                        self.distance_matrix
-                    )
-                    
-                    if distance < min_distance:
-                        min_distance = distance
-                        merge_pair = (cluster_id1, cluster_id2)
-            
-            if merge_pair is None:
-                break
-            
-            # Объединяем два ближайших кластера
-            id1, id2 = merge_pair
-            
+            min_distance = np.inf
+            to_merge = (0, 0)
+
+            for i in range(len(current_clusters)):
+                for j in range(i + 1, len(current_clusters)):
+                    cluster_i = current_clusters[i]
+                    cluster_j = current_clusters[j]
+                    dist = distance_matrix[cluster_i, cluster_j]
+                    if dist < min_distance:
+                        min_distance = dist
+                        to_merge = (cluster_i, cluster_j)
+
+            cluster_a, cluster_b = to_merge
+
             # Создаем новый узел дендрограммы
+            new_index = len(self.nodes)
             new_node = DendrogramNode(
-                node_index,
-                left_child=nodes[id1],
-                right_child=nodes[id2],
+                index=new_index,
+                left_child=self.nodes[cluster_a],
+                right_child=self.nodes[cluster_b],
                 distance=min_distance,
                 point_indices=np.concatenate([
-                    current_clusters[id1],
-                    current_clusters[id2]
+                    self.nodes[cluster_a].get_all_indices(),
+                    self.nodes[cluster_b].get_all_indices()
                 ])
             )
-            
-            # Сохраняем новый узел
-            nodes[node_index] = new_node
-            
-            # Обновляем кластеры
-            current_clusters[node_index] = new_node.point_indices
-            del current_clusters[id1]
-            del current_clusters[id2]
-            
-            # Сохраняем историю объединения
-            self.merge_history.append({
-                'cluster1': id1,
-                'cluster2': id2,
-                'distance': min_distance,
-                'new_cluster': node_index
-            })
-            
-            node_index += 1
+            self.nodes.append(new_node)
+
+            # Обновляем матрицу расстояний
+            new_distances = []
+            for k in current_clusters:
+                if k != cluster_a and k != cluster_b:
+                    cluster_a_indices = self.nodes[cluster_a].get_all_indices()
+                    cluster_b_indices = self.nodes[cluster_b].get_all_indices()
+                    cluster_k_indices = self.nodes[k].get_all_indices()
+                    
+                    # Вычисляем расстояние между объединенным кластером (a+b) и кластером k
+                    dist_a_k = self.linkage_method.compute(
+                        cluster_a_indices,
+                        cluster_k_indices,
+                        distance_matrix
+                    )
+                    dist_b_k = self.linkage_method.compute(
+                        cluster_b_indices,
+                        cluster_k_indices,
+                        distance_matrix
+                    )
+                    
+                    # Для average linkage берем среднее
+                    dist = (dist_a_k + dist_b_k) / 2.0
+                    new_distances.append((k, dist))
+
+            new_cluster_index = new_index
+            current_clusters = [
+                c for c in current_clusters if c != cluster_a and c != cluster_b
+            ]
+            current_clusters.append(new_cluster_index)
+
+            new_size = len(distance_matrix) + 1
+            new_distance_matrix = np.zeros((new_size, new_size))
+            new_distance_matrix[:-1, :-1] = distance_matrix
+
+            for k, dist in new_distances:
+                new_distance_matrix[new_cluster_index, k] = dist
+                new_distance_matrix[k, new_cluster_index] = dist
+
+            distance_matrix = new_distance_matrix
         
-        # Сохраняем корневой узел дендрограммы
-        self.dendrogram = nodes[node_index - 1]
+        self.dendrogram = self.nodes[-1]
+        
+       
     
     def predict(self, n_clusters: int) -> np.ndarray:
-        """
-        Разрезает дендрограмму для получения n кластеров
-        
-        Args:
-            n_clusters (int): желаемое количество кластеров
-        
-        Returns:
-            clusters (np.ndarray): массив кластеров для каждой точки
-        """
         if self.dendrogram is None:
             raise RuntimeError("Model must be fitted first")
         
-        # Обработка граничных случаев
+        n_samples = self.X.shape[0]
+        
         if n_clusters <= 1:
-            return np.zeros(self.n_samples, dtype=int)
+            return np.zeros(n_samples, dtype=int)
         
-        if n_clusters >= self.n_samples:
-            return np.arange(self.n_samples, dtype=int)
+        if n_clusters >= n_samples:
+            return np.arange(n_samples, dtype=int)
         
-        # Находим пороговое расстояние
-        if len(self.merge_history) < n_clusters - 1:
-            n_clusters = len(self.merge_history) + 1
+        # Собираем все расстояния слияния из дендрограммы
+        merge_distances = []
+        for node in self.nodes[n_samples:]:
+            if node.left_child is not None and node.right_child is not None:
+                merge_distances.append(node.distance)
         
-        # Сортируем историю объединений по расстоянию в порядке возрастания
-        sorted_merges = sorted(self.merge_history, key=lambda x: x['distance'])
+        merge_distances.sort()
+        # Для получения n_clusters нужно сделать n_clusters-1 разрезов
+        # Разрезаем между (n_clusters-1)-м и n_clusters-м самым большим слиянием
+        # Это означает, что threshold должен быть между merge_distances[-(n_clusters)] и merge_distances[-(n_clusters-1)]
+        threshold_idx = len(merge_distances) - n_clusters
+        if threshold_idx < 0:
+            threshold = -np.inf  # Все в отдельные кластеры
+        elif threshold_idx >= len(merge_distances):
+            threshold = np.inf  # Все в один кластер
+        else:
+            # Берем среднее между двумя соседними расстояниями
+            if threshold_idx + 1 < len(merge_distances):
+                threshold = (merge_distances[threshold_idx] + merge_distances[threshold_idx + 1]) / 2.0
+            else:
+                threshold = merge_distances[threshold_idx] + 0.001
         
-        # Пороговое расстояние - это расстояние между (n_clusters-1)-м и n_clusters-м объединениями
-        # Мы останавливаемся до объединения на позиции n_clusters-1
-        threshold = sorted_merges[len(sorted_merges) - n_clusters + 1]['distance']
+        cluster_assignment = np.zeros(n_samples, dtype=int)
+        cluster_id = [0]
         
-        # Рекурсивно разрезаем дендрограмму
-        cluster_assignment = np.zeros(self.n_samples, dtype=int)
-        cluster_id = [0]  # Используем список для изменения в вложенной функции
+        def assign_cluster(node: DendrogramNode):
+            """Присваивает всем точкам в узле один кластер"""
+            for idx in node.get_all_indices():
+                cluster_assignment[idx] = cluster_id[0]
+            cluster_id[0] += 1
         
         def cut_tree(node: DendrogramNode):
-            # Если листовой узел или расстояние объединения <= порога, это кластер
+            # Листовой узел - одна точка
             if node.left_child is None and node.right_child is None:
-                # Листовой узел - это отдельная точка
-                for idx in node.get_all_indices():
-                    cluster_assignment[idx] = cluster_id[0]
-                cluster_id[0] += 1
-            elif node.distance <= threshold:
-                # Расстояние объединения меньше или равно порогу - это кластер
-                for idx in node.get_all_indices():
-                    cluster_assignment[idx] = cluster_id[0]
-                cluster_id[0] += 1
-            else:
-                # Продолжаем разрезание вниз по дереву
+                assign_cluster(node)
+                return
+            
+            # Если расстояние слияния больше порога, 
+            # продолжаем разделять потомков
+            if node.distance > threshold:
                 if node.left_child is not None:
                     cut_tree(node.left_child)
                 if node.right_child is not None:
                     cut_tree(node.right_child)
+            else:
+                # Если расстояние <= порога, все точки в этом узле 
+                # образуют один кластер
+                assign_cluster(node)
         
         cut_tree(self.dendrogram)
-        
         return cluster_assignment
     
     def get_dendrogram(self) -> DendrogramNode:
-        """
-        Возвращает дендрограмму
-        
-        Args:
-            None
-        
-        Returns:
-            dendrogram (DendrogramNode): корневой узел дендрограммы
-        """
         if self.dendrogram is None:
             raise RuntimeError("Model must be fitted first")
-        
         return self.dendrogram

@@ -1,5 +1,9 @@
+from __future__ import annotations
 import numpy as np
 from typing import Optional
+
+
+
 
 
 class DendrogramNode:
@@ -17,8 +21,8 @@ class DendrogramNode:
     def __init__(
         self,
         index: int,
-        left_child: Optional['DendrogramNode'] = None,
-        right_child: Optional['DendrogramNode'] = None,
+        left_child: Optional["DendrogramNode"] = None,
+        right_child: Optional["DendrogramNode"] = None,
         distance: float = 0.0,
         point_indices: Optional[np.ndarray] = None
     ):
