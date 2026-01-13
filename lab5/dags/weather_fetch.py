@@ -3,10 +3,12 @@ import json
 import pickle
 import os
 import logging
+import requests
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 from airflow.sdk import Variable
 from airflow.exceptions import AirflowSkipException, AirflowException
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 
 logger = logging.getLogger(__name__)
@@ -18,11 +20,11 @@ default_args = {
 }
 
 OPENWEATHER_API_URL = "https://api.openweathermap.org/data/2.5/weather?q={city},{country_code}&lat={lat}&lon={lon}&appid={api_key}&units=metric"
-TEMP_DIR = "/tmp/weather_data"
+TEMP_DIR = "/tmp/weather_data/data"
 
 
 @dag(
-    dag_id="weather_vladivostok_dag",
+    dag_id="weather_fetch_vladivostok_dag",
     description='Сбор данных о погоде во Владивостоке',
     start_date=datetime.now(),
     schedule="*/30 * * * *",
@@ -30,7 +32,7 @@ TEMP_DIR = "/tmp/weather_data"
     default_args=default_args,
     tags=["weather", "vladivostok"],
 )
-def weather_pipeline():
+def weather_fetch_pipeline():
 
     @task
     def get_city_config() -> str:
@@ -95,7 +97,7 @@ def weather_pipeline():
     @task
     def fetch_weather_data(config_path: str, api_key_path: str) -> str:
         """
-        Сбор данных о погоде из OpenWeather API с расширенной обработкой ошибок
+        Сбор данных о погоде из OpenWeather API
         
         Args:
             config_path: Путь к файлу с конфигурацией города
@@ -133,13 +135,12 @@ def weather_pipeline():
         
         logger.info(f"Запрос к API для города: {config['city']}")
         
-        # Запрос к API с расширенной обработкой ошибок
         try:
-            import requests
+
             
             response = requests.get(url, timeout=10)
             
-            # Проверка статус кода
+
             if response.status_code == 401:
                 logger.error("Ошибка 401: Неверный API ключ")
                 raise AirflowException("Неверный API ключ OpenWeather")
@@ -156,7 +157,7 @@ def weather_pipeline():
             response.raise_for_status()
             data = response.json()
             
-            # Валидация полученных данных
+
             if 'main' not in data or 'weather' not in data:
                 logger.error(f"Неполные данные от API: {data}")
                 raise AirflowException("Получены неполные данные от OpenWeather API")
@@ -165,7 +166,7 @@ def weather_pipeline():
             logger.info(f"Температура: {data.get('main', {}).get('temp')}°C")
             logger.info(f"Погода: {data.get('weather', [{}])[0].get('description')}")
             
-            # Сохранение в JSON
+
             weather_path = f"{TEMP_DIR}/weather_raw.json"
             with open(weather_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
@@ -189,7 +190,7 @@ def weather_pipeline():
     @task
     def process_weather_data(weather_path: str) -> str:
         """
-        Предобработка данных о погоде и приведение их в DataFrame
+        Предобработка данных о погоде
         
         Args:
             weather_path: Путь к JSON файлу с данными о погоде
@@ -199,7 +200,7 @@ def weather_pipeline():
         """
         logger.info("Предобработка данных о погоде...")
         
-        # Чтение сырых данных
+
         try:
             with open(weather_path, 'r', encoding='utf-8') as f:
                 weather_data = json.load(f)
@@ -231,9 +232,9 @@ def weather_pipeline():
             
             df = pd.DataFrame([processed])
             logger.info(f"Данные о погоде обработаны:\n{df.to_string()}")
-            
-            # Сохранение DataFrame в pickle
-            df_path = f"{TEMP_DIR}/weather_df.pkl"
+
+            timestamp = datetime.now()
+            df_path = f"{TEMP_DIR}/weather_df_{timestamp.strftime('%Y%m%d_%H%M%S')}.pkl"
             with open(df_path, 'wb') as f:
                 pickle.dump(df, f)
             
@@ -256,7 +257,7 @@ def weather_pipeline():
         Returns:
             str: Путь к сохраненному CSV файлу
         """
-        # Загрузка DataFrame
+
         try:
             with open(df_path, 'rb') as f:
                 df = pickle.load(f)
@@ -265,7 +266,7 @@ def weather_pipeline():
             logger.error(f"Ошибка загрузки DataFrame: {e}")
             raise AirflowException(f"Не удалось загрузить DataFrame: {e}")
         
-        # Загрузка конфигурации
+
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
@@ -273,7 +274,7 @@ def weather_pipeline():
             logger.error(f"Ошибка загрузки конфигурации: {e}")
             raise AirflowException(f"Не удалось загрузить конфигурацию: {e}")
         
-        # Формирование имени файла
+
         timestamp = datetime.now()
         csv_filename = f"weather_data_{config['city']}_{config['country_code']}_{timestamp.strftime('%Y%m%d_%H%M%S')}.csv"
         csv_path = f"{TEMP_DIR}/{csv_filename}"
@@ -287,12 +288,19 @@ def weather_pipeline():
             logger.error(f"Ошибка сохранения данных в CSV: {e}")
             raise AirflowException(f"Ошибка сохранения данных в CSV: {e}")
 
-    # Построение pipeline
+
     config_path = get_city_config()
     api_key_path = get_openweather_api_key()
     weather_path = fetch_weather_data(config_path, api_key_path)
     df_path = process_weather_data(weather_path)
-    csv_path = save_to_csv(df_path, config_path)
+    csv_path = save_to_csv(df_path, config_path)    
 
+    trigger_training = TriggerDagRunOperator(
+        task_id='trigger_model_training',
+        trigger_dag_id='weather_model_training_dag',
+    )
 
-instance = weather_pipeline()
+    csv_path >> trigger_training
+    
+
+instance = weather_fetch_pipeline()

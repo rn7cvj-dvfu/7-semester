@@ -104,24 +104,21 @@ class DBSCAN:
         """
         labels[point_idx] = cluster_id
         
-        # Используем список для обхода соседей
+      
         i = 0
         while i < len(neighbors):
             neighbor_idx = neighbors[i]
             
-            # Если точка была шумом, добавляем её в кластер
             if labels[neighbor_idx] == self.NOISE:
                 labels[neighbor_idx] = cluster_id
             
-            # Если точка ещё не классифицирована
             elif labels[neighbor_idx] == self.UNCLASSIFIED:
                 labels[neighbor_idx] = cluster_id
                 
-                # Проверяем, является ли эта точка ядерной
                 neighbor_neighbors = self._get_neighbors(neighbor_idx, distance_matrix)
                 
                 if len(neighbor_neighbors) >= self.min_samples:
-                    # Добавляем новых соседей в список для обработки
+                
                     neighbors = np.concatenate([neighbors, neighbor_neighbors])
                     neighbors = np.unique(neighbors)
             
