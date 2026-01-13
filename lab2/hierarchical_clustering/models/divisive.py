@@ -27,15 +27,13 @@ class DivisiveClustering(HierarchicalClustering):
         self.linkage_method = linkage_method
         self.distance_metric = distance_metric
         
-        # Вычисляем матрицу расстояний
         self.distance_matrix = compute_distance_matrix(X, self.distance_metric)
         
         self.n_samples = X.shape[0]
         
-        # История разбиений кластеров
+
         self.split_history = []
         
-        # Дендрограмма
         self.dendrogram = None
     
     def _find_farthest_pair(self, indices: np.ndarray) -> tuple:

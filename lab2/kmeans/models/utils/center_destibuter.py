@@ -69,13 +69,13 @@ class KMeansCenterDestributerRandom(KMeansCenterDestributer):
     
 class KMeansCenterDestributerEven(KMeansCenterDestributer):
     """
-    Класс для равномерного распределения центров
+    Класс для равномерного распределения центров по всей плоскости
     """
 
 
     def destribute(self) -> np.ndarray:
         """
-        Метод для равномерного распределения центров
+        Метод для равномерного распределения центров по всей плоскости
         
         Args:
             None
@@ -83,9 +83,19 @@ class KMeansCenterDestributerEven(KMeansCenterDestributer):
         Returns:
             сenters (np.ndarray): Массив размерностью (centers_count, n_features) с начальными центрами.
         """ 
-        n_samples = self.X.shape[0]
-        indices = np.linspace(0, n_samples - 1, self.centers_count, dtype=int)
-        return self.X[indices]
+        n_features = self.X.shape[1]
+        
+        min_vals = np.min(self.X, axis=0)
+        max_vals = np.max(self.X, axis=0)
+        
+        centers = []
+        for i in range(self.centers_count):
+            center = np.zeros(n_features)
+            for j in range(n_features):
+                center[j] = min_vals[j] + (max_vals[j] - min_vals[j]) * (i + 1) / (self.centers_count + 1)
+            centers.append(center)
+        
+        return np.array(centers)
     
 
 class KMeansCenterDestributerEventHyperplane(KMeansCenterDestributer):

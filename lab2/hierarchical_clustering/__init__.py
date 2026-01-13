@@ -11,14 +11,11 @@ from .models.utils.linkage import (
     SingleLinkage,
     CompleteLinkage,
     AverageLinkage,
-    WardLinkage,
-    get_linkage_method
 )
 from .models.utils.distance import (
     DistanceMetric,
     EuclideanDistance,
-    ManhattanDistance,
-    CosineDistance,
+
     compute_distance_matrix
 )
 
@@ -31,11 +28,9 @@ __all__ = [
     'SingleLinkage',
     'CompleteLinkage',
     'AverageLinkage',
-    'WardLinkage',
-    'get_linkage_method',
+
     'DistanceMetric',
     'EuclideanDistance',
-    'ManhattanDistance',
-    'CosineDistance',
+
     'compute_distance_matrix',
 ]

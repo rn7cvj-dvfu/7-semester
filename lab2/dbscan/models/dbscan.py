@@ -62,7 +62,6 @@ class DBSCAN:
         self.min_samples = min_samples
         self.distance_metric = distance_metric if distance_metric is not None else EuclideanDistance()
         
-        # Результаты после fit
         self.labels_: Optional[np.ndarray] = None
         self.core_sample_indices_: Optional[np.ndarray] = None
         self.n_clusters_: int = 0
@@ -138,40 +137,33 @@ class DBSCAN:
             self: возвращает экземпляр класса
         """
         n_samples = self.X.shape[0]
+    
+        distance_matrix = np.zeros((n_samples, n_samples))
+        for i in range(n_samples):
+            for j in range(i + 1, n_samples):
+                dist = self.distance_metric.compute(self.X[i], self.X[j])
+                distance_matrix[i, j] = dist
+                distance_matrix[j, i] = dist
         
-        # Вычисляем матрицу расстояний более эффективно
-        try:
-            from scipy.spatial.distance import cdist
-            distance_matrix = cdist(self.X, self.X, metric='euclidean')
-        except ImportError:
-            # Если scipy недоступна, используем numpy
-            distance_matrix = np.zeros((n_samples, n_samples))
-            for i in range(n_samples):
-                for j in range(i + 1, n_samples):
-                    dist = self.distance_metric.compute(self.X[i], self.X[j])
-                    distance_matrix[i, j] = dist
-                    distance_matrix[j, i] = dist
-        
-        # Инициализируем метки как неклассифицированные
+
         labels = np.full(n_samples, self.UNCLASSIFIED, dtype=int)
         core_samples = []
         
         cluster_id = 0
         
-        # Проходим по всем точкам
+
         for point_idx in range(n_samples):
-            # Пропускаем уже классифицированные точки
             if labels[point_idx] != self.UNCLASSIFIED:
                 continue
             
-            # Находим соседей
+
             neighbors = self._get_neighbors(point_idx, distance_matrix)
             
-            # Если недостаточно соседей, помечаем как шум
+
             if len(neighbors) < self.min_samples:
                 labels[point_idx] = self.NOISE
             else:
-                # Это ядерная точка - создаём новый кластер
+
                 core_samples.append(point_idx)
                 self._expand_cluster(point_idx, neighbors, cluster_id, labels, distance_matrix)
                 cluster_id += 1
@@ -189,7 +181,8 @@ class DBSCAN:
         Returns:
             labels (np.ndarray): метки кластеров (-1 для шума)
         """
-        self.fit()
+        if self.labels_ is None:
+            raise RuntimeError("Model must be fitted first")
         return self.labels_
     
     def get_labels(self) -> np.ndarray:
@@ -221,4 +214,6 @@ class DBSCAN:
         Returns:
             n_clusters (int): количество кластеров
         """
+        if self.labels_ is None:
+            raise RuntimeError("Model must be fitted first")
         return self.n_clusters_

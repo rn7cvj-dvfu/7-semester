@@ -41,51 +41,6 @@ class EuclideanDistance(DistanceMetric):
         return float(np.linalg.norm(point1 - point2))
 
 
-class ManhattanDistance(DistanceMetric):
-    """
-    Манхэттенское расстояние между точками
-    """
-    
-    def compute(self, point1: np.ndarray, point2: np.ndarray) -> float:
-        """
-        Вычисляет манхэттенское расстояние
-
-        Args:
-            point1 (np.ndarray): первая точка
-            point2 (np.ndarray): вторая точка
-
-        Returns:
-            distance (float): манхэттенское расстояние
-        """
-        return float(np.sum(np.abs(point1 - point2)))
-
-
-class CosineDistance(DistanceMetric):
-    """
-    Косинусное расстояние между точками
-    """
-    
-    def compute(self, point1: np.ndarray, point2: np.ndarray) -> float:
-        """
-        Вычисляет косинусное расстояние
-
-        Args:
-            point1 (np.ndarray): первая точка
-            point2 (np.ndarray): вторая точка
-
-        Returns:
-            distance (float): косинусное расстояние
-        """
-        dot_product = np.dot(point1, point2)
-        norm1 = np.linalg.norm(point1)
-        norm2 = np.linalg.norm(point2)
-        
-        if norm1 == 0 or norm2 == 0:
-            return float('inf')
-        
-        cosine_similarity = dot_product / (norm1 * norm2)
-        # Косинусное расстояние = 1 - косинусное подобие
-        return float(1 - cosine_similarity)
 
 
 def compute_distance_matrix(

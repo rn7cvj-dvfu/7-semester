@@ -87,8 +87,8 @@ class KMeansImpl(KMeans):
         X: np.ndarray,
         clusters_count: int = 3,
         stopper: KMeansIterationStoper =  KMeansIterationStoperItersCount(),
-        center_destributer: type[KMeansCenterDestributer] = KMeansCenterDestributerEven,
-        history_writer : type[KMeansHistoryWriter] = KMeansHistoryWriterIgnore,
+        center_destributer: type[KMeansCenterDestributer] = KMeansCenterDestributerEven(),
+        history_writer : type[KMeansHistoryWriter] = KMeansHistoryWriterIgnore(),
     ) -> None:
         self.X = X
         self.clusters_count = clusters_count
