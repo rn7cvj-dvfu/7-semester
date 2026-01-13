@@ -2,6 +2,7 @@
 Hierarchical Clustering module
 """
 
+from .models.base import HierarchicalClustering
 from .models.agglomerative import AgglomerativeClustering
 from .models.divisive import DivisiveClustering
 from .models.utils.dendrogram import DendrogramNode
@@ -22,6 +23,7 @@ from .models.utils.distance import (
 )
 
 __all__ = [
+    'HierarchicalClustering',
     'AgglomerativeClustering',
     'DivisiveClustering',
     'DendrogramNode',
