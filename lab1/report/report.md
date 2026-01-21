@@ -32,9 +32,9 @@ pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb mingw-w64-x86_64-make
 
 * Установка CMake (https://cmake.org/download/)
 
-### Установка/Настройка VsCode
+### Установка VsCode
 
-* 
+* Установка VSCode (https://code.visualstudio.com/)
 
 ## Настройка Ununtu
 
@@ -77,6 +77,17 @@ sudo apt upgrade -y
 sudo apt install -y build-essential
 sudo apt install -y cmake
 ```
+
+### Установка VsCode
+
+* Установка VSCode (https://code.visualstudio.com/)
+
+## Настройки VsCode
+
+Так как VsCode кросплатформенный настройки одинаковые для Windows/Ubuntu
+
+* Устанавливаем пак расширений ня C++ (https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack)
+
 
 ## Настройка проекта
 
