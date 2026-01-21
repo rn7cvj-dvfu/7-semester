@@ -13,7 +13,8 @@ fi
 
 git pull
 if [ $? -ne 0 ]; then
-    echo "Warning: Ошибка при git pull (возможно, нет изменений)"
+    echo "Error: Ошибка при git pull"
+    exit 1
 fi
 
 # 2. Проверка инструментов
@@ -53,7 +54,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 4. Запуск
+# 4. Запуск в отдельном окне
 echo "== Запуск программы =="
 
 EXE_PATH="./$EXE_NAME"
@@ -63,7 +64,17 @@ if [ ! -f "$EXE_PATH" ]; then
     exit 1
 fi
 
-echo "Запуск $EXE_NAME..."
-./$EXE_NAME
+# Попытка запустить в новом терминале (разные варианты для разных DE)
+if command -v gnome-terminal &> /dev/null; then
+    gnome-terminal -- bash -c "./$EXE_NAME; echo; read -p 'Нажмите Enter для выхода...'"
+elif command -v xterm &> /dev/null; then
+    xterm -hold -e "./$EXE_NAME"
+elif command -v konsole &> /dev/null; then
+    konsole --hold -e "./$EXE_NAME"
+else
+    # Если нет графического терминала, запускаем в текущем
+    ./$EXE_NAME
+    read -p "Нажмите Enter для выхода..."
+fi
 
 cd ..
