@@ -51,8 +51,50 @@ namespace ProcessManager {
     }
 
     LaunchResult launchTerminal(const std::vector<std::string>& args) {
-        // На Windows используем cmd.exe
-        return launchProcess("cmd.exe", args);
+        LaunchResult result;
+        result.success = false;
+        result.handle = NULL;
+        
+        STARTUPINFOW si;
+        PROCESS_INFORMATION pi;
+        
+        ZeroMemory(&si, sizeof(si));
+        si.cb = sizeof(si);
+        ZeroMemory(&pi, sizeof(pi));
+        
+        // Для cmd.exe строим командную строку вручную без кавычек вокруг команды
+        std::wstring cmdLine = L"cmd.exe";
+        
+        for (const auto& arg : args) {
+            cmdLine += L" " + internal::stringToWString(arg);
+        }
+        
+        std::vector<wchar_t> cmdLineBuffer(cmdLine.begin(), cmdLine.end());
+        cmdLineBuffer.push_back(L'\0');
+        
+        if (!CreateProcessW(
+                NULL,                   // Имя модуля
+                cmdLineBuffer.data(),   // Командная строка
+                NULL,                   // Атрибуты безопасности процесса
+                NULL,                   // Атрибуты безопасности потока
+                FALSE,                  // Наследование дескрипторов
+                CREATE_NEW_CONSOLE,     // Флаги создания (новая консоль)
+                NULL,                   // Окружение
+                NULL,                   // Текущая директория
+                &si,                    // Информация о запуске
+                &pi                     // Информация о процессе
+            )) {
+            DWORD error = GetLastError();
+            result.error = "Failed to create terminal process. Error code: " + std::to_string(error);
+            return result;
+        }
+        
+        CloseHandle(pi.hThread);
+        
+        result.success = true;
+        result.handle = pi.hProcess;
+        
+        return result;
     }
 
     WaitResult waitForProcess(

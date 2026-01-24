@@ -15,7 +15,7 @@ using namespace ProcessManager;
 #ifdef _WIN32
  
     std::string terminal = "cmd.exe";
-    std::vector<std::string> helloWorldArgs = { "/C", "echo Hello, World! && pause" };
+    std::vector<std::string> helloWorldArgs = { "/C echo Hello, World! && pause" };
 
 #endif
 
@@ -29,7 +29,7 @@ using namespace ProcessManager;
 
 
 int main() {
-    
+
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
@@ -46,7 +46,7 @@ int main() {
 
 
     // ProcessManager::LaunchResult launchResult =  ProcessManager::launchTerminal("echo 'Hello, World!'; bash");
-    LaunchResult launchResult =  ProcessManager::launchProcess(terminal, helloWorldArgs);
+    LaunchResult launchResult =  ProcessManager::launchTerminal(helloWorldArgs);
 
     if (!launchResult.success) {
         std::cerr << "Ошибка запуска процесса: " << launchResult.error << "\n";
