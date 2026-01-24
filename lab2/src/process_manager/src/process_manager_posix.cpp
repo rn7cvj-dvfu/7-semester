@@ -61,7 +61,8 @@ LaunchResult launchProcess(
         
         execvp(command.c_str(), argv);
         
-        std::cerr << "Failed to execute " << command << ": " << std::strerror(errno) << std::endl;
+        // Если execvp вернул управление - произошла ошибка
+        // Не выводим в stderr, чтобы не засорять вывод родительского процесса
         internal::freeArgv(argv);
         _exit(1);
     }

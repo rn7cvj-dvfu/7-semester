@@ -9,10 +9,12 @@ if(WIN32)
     set(PROCESS_MANAGER_SOURCES
         process_manager/src/process_manager_win.cpp
     )
-else()
+elseif(UNIX)
     set(PROCESS_MANAGER_SOURCES
         process_manager/src/process_manager_posix.cpp
     )
+else()
+    message(FATAL_ERROR "Unsupported platform: only Windows (WIN32) and UNIX are supported")
 endif()
 
 # Создаем библиотеку для управления процессами
