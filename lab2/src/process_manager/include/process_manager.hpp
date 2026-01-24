@@ -52,8 +52,18 @@ namespace ProcessManager {
      * @param args Аргументы командной строки
      * @return LaunchResult Результат запуска
      */
-    LaunchResult launchProcess(const std::string& command, 
-                               const std::vector<std::string>& args = {});
+    LaunchResult launchProcess(
+        const std::string& command, 
+        const std::vector<std::string>& args = {}
+    );
+
+    /**
+     * @brief Запускает терминал с командой
+     * 
+     * @param args Аргументы командной строки для терминала
+     * @return LaunchResult Результат запуска терминала
+     */
+    LaunchResult launchTerminal(const std::vector<std::string>& args = {});
 
     /**
      * @brief Ожидает завершения процесса и получает код возврата
@@ -62,7 +72,22 @@ namespace ProcessManager {
      * @param timeoutMs Таймаут в миллисекундах (0 - бесконечно)
      * @return WaitResult Результат ожидания с кодом возврата
      */
-    WaitResult waitForProcess(ProcessHandle handle, unsigned int timeoutMs = 0);
+    WaitResult waitForProcess(
+        ProcessHandle handle, 
+        unsigned int timeoutMs = 0
+    );
+
+    /**
+     * @brief Ожидает закрытия окна терминала и получает код возврата
+     * 
+     * @param handle Дескриптор процесса терминала
+     * @param timeoutMs Таймаут в миллисекундах (0 - бесконечно)
+     * @return WaitResult Результат ожидания с кодом возврата
+     */
+    WaitResult waitForTerminal(
+        ProcessHandle handle, 
+        unsigned int timeoutMs = 0
+    );
 
     /**
      * @brief Проверяет, запущен ли процесс
@@ -89,33 +114,25 @@ namespace ProcessManager {
      */
     void closeHandle(ProcessHandle handle);
 
-    /**
-     * @brief Запускает терминал с командой
-     * 
-     * @param command Команда для выполнения в терминале
-     * @return LaunchResult Результат запуска терминала
-     */
-    LaunchResult launchTerminal(const std::string& command);
-
-    /**
-     * @brief Ожидает закрытия окна терминала и получает код возврата
-     * 
-     * @param handle Дескриптор процесса терминала
-     * @param timeoutMs Таймаут в миллисекундах (0 - бесконечно)
-     * @return WaitResult Результат ожидания с кодом возврата
-     */
-    WaitResult waitForTerminal(ProcessHandle handle, unsigned int timeoutMs = 0);
-
   
     namespace internal {
+        
 #ifdef _WIN32
        
-        std::wstring buildCommandLine(const std::string& command, 
-                                      const std::vector<std::string>& args);
+        std::wstring buildCommandLine(
+            const std::string& command, 
+            const std::vector<std::string>& args,
+        );
+
         std::wstring stringToWString(const std::string& str);
+
 #elif defined(__unix__)
-        char** buildArgv(const std::string& command, 
-                        const std::vector<std::string>& args);
+
+        char** buildArgv(
+            const std::string& command, 
+            const std::vector<std::string>& args
+        );
+                        
         void freeArgv(char** argv);
 #endif
     } 
