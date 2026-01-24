@@ -6,7 +6,7 @@
 
 #ifdef _WIN32
     #include <windows.h>
-#else
+#elif defined(__unix__)
     #include <sys/types.h>
 #endif
 
@@ -17,7 +17,7 @@ namespace ProcessManager {
 
 #ifdef _WIN32
     using ProcessHandle = HANDLE;
-#else
+#elif defined(__unix__)
     using ProcessHandle = pid_t;
 #endif
 
@@ -89,6 +89,23 @@ namespace ProcessManager {
      */
     void closeHandle(ProcessHandle handle);
 
+    /**
+     * @brief Запускает терминал с командой
+     * 
+     * @param command Команда для выполнения в терминале
+     * @return LaunchResult Результат запуска терминала
+     */
+    LaunchResult launchTerminal(const std::string& command);
+
+    /**
+     * @brief Ожидает закрытия окна терминала и получает код возврата
+     * 
+     * @param handle Дескриптор процесса терминала
+     * @param timeoutMs Таймаут в миллисекундах (0 - бесконечно)
+     * @return WaitResult Результат ожидания с кодом возврата
+     */
+    WaitResult waitForTerminal(ProcessHandle handle, unsigned int timeoutMs = 0);
+
   
     namespace internal {
 #ifdef _WIN32
@@ -96,7 +113,7 @@ namespace ProcessManager {
         std::wstring buildCommandLine(const std::string& command, 
                                       const std::vector<std::string>& args);
         std::wstring stringToWString(const std::string& str);
-#else
+#elif defined(__unix__)
         char** buildArgv(const std::string& command, 
                         const std::vector<std::string>& args);
         void freeArgv(char** argv);

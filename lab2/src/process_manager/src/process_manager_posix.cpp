@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <fcntl.h>
 #include <cstring>
 #include <cerrno>
 #include <iostream>
@@ -49,23 +50,74 @@ LaunchResult launchProcess(
     result.success = false;
     result.handle = -1;
     
+    // Создаем pipe для обмена информацией об ошибках между родителем и дочерним процессом
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        result.error = "Failed to create pipe: " + std::string(std::strerror(errno));
+        return result;
+    }
+    
     pid_t pid = fork();
     
     if (pid < 0) {
         result.error = "Failed to fork process: " + std::string(std::strerror(errno));
+        close(pipefd[0]);
+        close(pipefd[1]);
         return result;
     }
     
     if (pid == 0) {
+        // Дочерний процесс
+        close(pipefd[0]); // Закрываем конец для чтения в дочернем процессе
+        
+        // Устанавливаем флаг close-on-exec для pipe
+        fcntl(pipefd[1], F_SETFD, FD_CLOEXEC);
+        
         char** argv = internal::buildArgv(command, args);
         
+        // execvp заменяет процесс, поэтому он никогда не вернет управление при успехе
         execvp(command.c_str(), argv);
         
-        // Если execvp вернул управление - произошла ошибка
-        // Не выводим в stderr, чтобы не засорять вывод родительского процесса
+        // Если мы здесь - произошла ошибка в execvp
+        int err = errno;
+        // Пишем код ошибки в pipe, чтобы родитель мог его прочитать
+        ssize_t writeResult = write(pipefd[1], &err, sizeof(err));
+        (void)writeResult; // Избегаем неиспользованного предупреждения
+        
         internal::freeArgv(argv);
         _exit(1);
     }
+    
+    // Родительский процесс
+    close(pipefd[1]); // Закрываем конец для записи в родительском процессе
+    
+    // Пытаемся прочитать ошибку из pipe
+    int err;
+    ssize_t readBytes = read(pipefd[0], &err, sizeof(err));
+    close(pipefd[0]);
+    
+    if (readBytes == sizeof(err)) {
+        // Мы получили ошибку из дочернего процесса
+        result.error = "Failed to execute command: " + std::string(std::strerror(err));
+        
+        // Ждем завершения дочернего процесса, чтобы избежать зомби
+        int status;
+        waitpid(pid, &status, 0);
+        
+        return result;
+    }
+    
+    if (readBytes == -1) {
+        result.error = "Failed to read from pipe: " + std::string(std::strerror(errno));
+        
+        int status;
+        waitpid(pid, &status, 0);
+        
+        return result;
+    }
+    
+    // readBytes == 0 означает, что pipe был закрыт без записи
+    // Это нормально - это значит, что execvp успешно выполнена
     
     result.success = true;
     result.handle = pid;
@@ -158,6 +210,60 @@ void closeHandle(ProcessHandle handle) {
     // В POSIX нет необходимости явно закрывать PID
     // Ресурсы освобождаются после waitpid
     (void)handle;
+}
+
+LaunchResult launchTerminal(const std::string& command) {
+    LaunchResult result;
+    result.success = false;
+    result.handle = -1;
+    
+    // Ищем доступный терминал
+    const char* terminals[] = {
+        "x-terminal-emulator",
+        "gnome-terminal",
+        "konsole",
+        "xfce4-terminal",
+        "xterm",
+        "mate-terminal",
+        nullptr
+    };
+    
+    std::string terminalCmd;
+    for (int i = 0; terminals[i] != nullptr; ++i) {
+        std::string checkCmd = std::string("which ") + terminals[i] + " > /dev/null 2>&1";
+        if (system(checkCmd.c_str()) == 0) {
+            terminalCmd = terminals[i];
+            break;
+        }
+    }
+    
+    if (terminalCmd.empty()) {
+        result.error = "No terminal emulator found";
+        return result;
+    }
+    
+    // Формируем аргументы для терминала
+    std::vector<std::string> args;
+    
+    if (terminalCmd == "xterm") {
+        args = { "-e", "bash", "-c", command };
+    } else if (terminalCmd == "gnome-terminal") {
+        args = { "--", "bash", "-c", command };
+    } else if (terminalCmd == "konsole") {
+        args = { "-e", "bash", "-c", command };
+    } else if (terminalCmd == "xfce4-terminal") {
+        args = { "-e", "bash", "-c", command };
+    } else if (terminalCmd == "mate-terminal") {
+        args = { "-e", "bash", "-c", command };
+    } else {
+        args = { "-e", "bash", "-c", command };
+    }
+    
+    return launchProcess(terminalCmd, args);
+}
+
+WaitResult waitForTerminal(ProcessHandle handle, unsigned int timeoutMs) {
+    return waitForProcess(handle, timeoutMs);
 }
 
 }

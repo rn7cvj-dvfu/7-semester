@@ -136,5 +136,21 @@ void closeHandle(ProcessHandle handle) {
     }
 }
 
+LaunchResult launchTerminal(const std::string& command) {
+    LaunchResult result;
+    result.success = false;
+    result.handle = NULL;
+    
+    // На Windows используем cmd.exe
+    std::string fullCmd = std::string("cmd.exe /K ") + command;
+    std::vector<std::string> args;
+    
+    return launchProcess("cmd.exe", { "/K", command });
+}
+
+WaitResult waitForTerminal(ProcessHandle handle, unsigned int timeoutMs) {
+    return waitForProcess(handle, timeoutMs);
+}
+
 }
 
