@@ -42,7 +42,7 @@ namespace ProcessManager {
         return result;
     }
 
-     LaunchResult launchTerminal(const std::string& command) {
+    LaunchResult launchTerminal(const std::vector<std::string>& args = {}) {
         LaunchResult result;
         result.success = false;
         result.handle = -1;
@@ -74,23 +74,26 @@ namespace ProcessManager {
             return result;
         }
         
-        std::vector<std::string> args;
+        std::vector<std::string> processArgs;
         
         if (terminalCmd == "xterm") {
-            args = { "-e", "bash", "-c", command };
+            processArgs = { "-e", "bash", "-c" };
         } else if (terminalCmd == "gnome-terminal") {
-            args = { "--wait", "--", "bash", "-c", command };
+            processArgs = { "--wait", "--", "bash", "-c" };
         } else if (terminalCmd == "konsole") {
-            args = { "-e", "bash", "-c", command };
+            processArgs = { "-e", "bash", "-c" };
         } else if (terminalCmd == "xfce4-terminal") {
-            args = { "-e", "bash", "-c", command };
+            processArgs = { "-e", "bash", "-c" };
         } else if (terminalCmd == "mate-terminal") {
-            args = { "-e", "bash", "-c", command };
+            processArgs = { "-e", "bash", "-c" };
         } else {
-            args = { "-e", "bash", "-c", command };
+            processArgs = { "-e", "bash", "-c" };
         }
         
-        return launchProcess(terminalCmd, args);
+         
+        processArgs.insert(processArgs.end(), args.begin(), args.end());    
+        
+        return launchProcess(terminalCmd, processArgs);
     }
 
     WaitResult waitForProcess(
@@ -117,6 +120,10 @@ namespace ProcessManager {
         }
         
         return result;
+    }
+
+   WaitResult waitForTerminal(ProcessHandle handle, unsigned int timeoutMs) {
+        return waitForProcess(handle, timeoutMs);
     }
 
     bool isProcessRunning(ProcessHandle handle) {
@@ -150,13 +157,6 @@ namespace ProcessManager {
     
         (void)handle;
     }
-
-   
-
-    WaitResult waitForTerminal(ProcessHandle handle, unsigned int timeoutMs) {
-        return waitForProcess(handle, timeoutMs);
-    }
-
 
     namespace internal {
 

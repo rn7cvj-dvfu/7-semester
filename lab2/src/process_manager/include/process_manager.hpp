@@ -121,7 +121,7 @@ namespace ProcessManager {
        
         std::wstring buildCommandLine(
             const std::string& command, 
-            const std::vector<std::string>& args,
+            const std::vector<std::string>& args
         );
 
         std::wstring stringToWString(const std::string& str);

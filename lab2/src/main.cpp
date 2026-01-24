@@ -15,7 +15,7 @@ using namespace ProcessManager;
 #ifdef _WIN32
  
     std::string terminal = "cmd.exe";
-    std::vector<std::string> helloWorldArgs = { "/C", "echo", "Hello, World!" };
+    std::vector<std::string> helloWorldArgs = { "/C", "echo Hello, World! && pause" };
 
 #endif
 
@@ -29,6 +29,7 @@ using namespace ProcessManager;
 
 
 int main() {
+    
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
