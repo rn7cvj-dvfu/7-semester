@@ -22,7 +22,7 @@ using namespace ProcessManager;
 #ifdef __unix__
  
     std::string terminal = "gnome-terminal";
-    std::vector<std::string> helloWorldArgs = { "--", "bash", "-c", "echo 'Hello, World!'; echo 'Нажмите Enter для выхода...';  read" };
+    std::vector<std::string> helloWorldArgs = { "--wait", "--", "bash", "-c", "echo 'Hello, World!'; echo 'Нажмите Enter для выхода...';  read" };
 #endif
 
 #pragma endregion
@@ -51,6 +51,11 @@ int main() {
         std::cerr << "Ошибка запуска процесса: " << launchResult.error << "\n";
         return 1;
     }
+
+    bool isRunning = ProcessManager::isProcessRunning(launchResult.handle);
+
+    std::cout << "Процесс с PID: " << launchResult.handle <<  " " << (isRunning ? "запущен" : "не запущен") << "\n";
+
 
     WaitResult waitResult = ProcessManager::waitForProcess(launchResult.handle);
 

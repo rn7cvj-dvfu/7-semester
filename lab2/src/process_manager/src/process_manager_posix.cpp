@@ -42,6 +42,57 @@ namespace ProcessManager {
         return result;
     }
 
+     LaunchResult launchTerminal(const std::string& command) {
+        LaunchResult result;
+        result.success = false;
+        result.handle = -1;
+        
+        const char* terminals[] = {
+            "x-terminal-emulator",
+            "gnome-terminal",
+            "konsole",
+            "xfce4-terminal",
+            "xterm",
+            "mate-terminal",
+            nullptr
+        };
+        
+        std::string terminalCmd;
+        
+        for (int i = 0; terminals[i] != nullptr; ++i) {
+        
+            std::string checkCmd = std::string("which ") + terminals[i] + " > /dev/null 2>&1";
+        
+            if (system(checkCmd.c_str()) == 0) {
+                terminalCmd = terminals[i];
+                break;
+            }
+        }
+        
+        if (terminalCmd.empty()) {
+            result.error = "No terminal emulator found";
+            return result;
+        }
+        
+        std::vector<std::string> args;
+        
+        if (terminalCmd == "xterm") {
+            args = { "-e", "bash", "-c", command };
+        } else if (terminalCmd == "gnome-terminal") {
+            args = { "--wait", "--", "bash", "-c", command };
+        } else if (terminalCmd == "konsole") {
+            args = { "-e", "bash", "-c", command };
+        } else if (terminalCmd == "xfce4-terminal") {
+            args = { "-e", "bash", "-c", command };
+        } else if (terminalCmd == "mate-terminal") {
+            args = { "-e", "bash", "-c", command };
+        } else {
+            args = { "-e", "bash", "-c", command };
+        }
+        
+        return launchProcess(terminalCmd, args);
+    }
+
     WaitResult waitForProcess(
         ProcessHandle handle, 
         unsigned int timeoutMs
@@ -71,20 +122,17 @@ namespace ProcessManager {
     bool isProcessRunning(ProcessHandle handle) {
         if (handle <= 0) return false;
         
-        // Используем kill с сигналом 0 чтобы проверить существование процесса
-        // Не отправляем реальный сигнал, просто проверяем
+
         int result = kill(handle, 0);
         
         if (result == 0) {
-            return true; // Процесс еще работает
+            return true;
         }
         
-        // ESRCH означает что процесса нет
         if (errno == ESRCH) {
             return false;
         }
         
-        // Другие ошибки означают что процесс существует
         return true;
     }
 
@@ -99,60 +147,11 @@ namespace ProcessManager {
     }
 
     void closeHandle(ProcessHandle handle) {
-        // В POSIX нет необходимости явно закрывать PID
-        // Ресурсы освобождаются после waitpid
+    
         (void)handle;
     }
 
-    LaunchResult launchTerminal(const std::string& command) {
-        LaunchResult result;
-        result.success = false;
-        result.handle = -1;
-        
-        // Ищем доступный терминал
-        const char* terminals[] = {
-            "x-terminal-emulator",
-            "gnome-terminal",
-            "konsole",
-            "xfce4-terminal",
-            "xterm",
-            "mate-terminal",
-            nullptr
-        };
-        
-        std::string terminalCmd;
-        for (int i = 0; terminals[i] != nullptr; ++i) {
-            std::string checkCmd = std::string("which ") + terminals[i] + " > /dev/null 2>&1";
-            if (system(checkCmd.c_str()) == 0) {
-                terminalCmd = terminals[i];
-                break;
-            }
-        }
-        
-        if (terminalCmd.empty()) {
-            result.error = "No terminal emulator found";
-            return result;
-        }
-        
-        // Формируем аргументы для терминала
-        std::vector<std::string> args;
-        
-        if (terminalCmd == "xterm") {
-            args = { "-e", "bash", "-c", command };
-        } else if (terminalCmd == "gnome-terminal") {
-            args = { "--wait", "--", "bash", "-c", command };
-        } else if (terminalCmd == "konsole") {
-            args = { "-e", "bash", "-c", command };
-        } else if (terminalCmd == "xfce4-terminal") {
-            args = { "-e", "bash", "-c", command };
-        } else if (terminalCmd == "mate-terminal") {
-            args = { "-e", "bash", "-c", command };
-        } else {
-            args = { "-e", "bash", "-c", command };
-        }
-        
-        return launchProcess(terminalCmd, args);
-    }
+   
 
     WaitResult waitForTerminal(ProcessHandle handle, unsigned int timeoutMs) {
         return waitForProcess(handle, timeoutMs);
