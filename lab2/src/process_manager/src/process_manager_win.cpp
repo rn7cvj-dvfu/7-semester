@@ -7,7 +7,8 @@ namespace ProcessManager {
 
     LaunchResult launchProcess(
         const std::string& command, 
-        const std::vector<std::string>& args
+        const std::vector<std::string>& args,
+        bool silent
     ) {
         LaunchResult result;
         result.success = false;
@@ -25,13 +26,15 @@ namespace ProcessManager {
         std::vector<wchar_t> cmdLineBuffer(cmdLine.begin(), cmdLine.end());
         cmdLineBuffer.push_back(L'\0');
         
+        DWORD creationFlags = silent ? CREATE_NO_WINDOW : CREATE_NEW_CONSOLE;
+        
         if (!CreateProcessW(
                 NULL,                   // Имя модуля (NULL = использовать командную строку)
                 cmdLineBuffer.data(),   // Командная строка
                 NULL,                   // Атрибуты безопасности процесса
                 NULL,                   // Атрибуты безопасности потока
                 FALSE,                  // Наследование дескрипторов
-                CREATE_NEW_CONSOLE,     // Флаги создания (новая консоль для фонового процесса)
+                creationFlags,          // Флаги создания
                 NULL,                   // Окружение
                 NULL,                   // Текущая директория
                 &si,                    // Информация о запуске

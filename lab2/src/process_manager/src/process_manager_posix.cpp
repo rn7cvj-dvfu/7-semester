@@ -11,7 +11,8 @@ namespace ProcessManager {
 
     LaunchResult launchProcess(
         const std::string& command, 
-        const std::vector<std::string>& args
+        const std::vector<std::string>& args,
+        bool silent
     ) {
         LaunchResult result;
         result.success = false;

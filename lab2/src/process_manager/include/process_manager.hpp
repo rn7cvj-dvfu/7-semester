@@ -50,11 +50,13 @@ namespace ProcessManager {
      * 
      * @param command Команда для выполнения (путь к исполняемому файлу)
      * @param args Аргументы командной строки
+     * @param silent Тихий запуск без окна (только для Windows)
      * @return LaunchResult Результат запуска
      */
     LaunchResult launchProcess(
         const std::string& command, 
-        const std::vector<std::string>& args = {}
+        const std::vector<std::string>& args = {},
+        bool silent = false
     );
 
     /**
