@@ -4,10 +4,15 @@
 #include <ctime>
 #include <chrono>
 #include <thread>
-
+#include <date_time.hpp>
 #include <virtual_com_port.hpp>
 
 int main(int argc, char* argv[]) {
+
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#endif
     
     if (argc < 6) {
         std::cerr << "Usage: " << argv[0] << " <comPortName> <minValue> <maxValue> <interval (ms)> <randomShift (ms)>" << std::endl;
@@ -47,11 +52,13 @@ int main(int argc, char* argv[]) {
         int shift = (std::rand() % (2 * randomShiftMS + 1)) - randomShiftMS;
         int waitTime = intervalMS + shift;
         
-        std::string message = std::to_string(sensorValue) + "\n";
+        std::string nowStr = std::to_string(std::time(nullptr));
+
+        std::string message = std::to_string(sensorValue) +"|" + nowStr + "\n";
         int written = comPort.write(message);
         
         if (written > 0) {
-            std::cout << "Sent: " << sensorValue << " (wait: " << waitTime << " ms)" << std::endl;
+            std::cout << "Sent: " << message << " (wait: " << waitTime << " ms)" << std::endl;
         } else {
             std::cerr << "Error writing to port!" << std::endl;
         }

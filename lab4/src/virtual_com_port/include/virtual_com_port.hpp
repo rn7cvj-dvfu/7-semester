@@ -69,7 +69,25 @@ namespace VirtualCOM {
 
         ~VirtualComPort();
 
+    private:
+#ifdef _WIN32
+        HANDLE handle_;
+        std::string portName_;
+#elif defined(__unix__)
+        int fd_;
+        std::string portName_;
+        struct termios oldTermios_;
+#endif
+        bool isOpen_;
+        int baudRate_;
 
+        bool configurePort();
+        
+#ifdef _WIN32
+        bool configureWindowsPort();
+#elif defined(__unix__)
+        bool configureUnixPort();
+#endif
     };
 
 } 
