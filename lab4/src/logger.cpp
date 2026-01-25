@@ -55,7 +55,7 @@ struct LogEntry {
 
     static LogEntry fromString(const std::string& str) {
     
-        size_t delimiter_pos = str.find(' | ');
+        size_t delimiter_pos = str.find(" | ");
 
 
         std::string timestamps_part = str.substr(0, delimiter_pos);
@@ -123,7 +123,6 @@ std::vector<LogEntry> filterByLiveTime(
     return filtered;
 }
 
-
 void saveLogFile(const std::string& filename, const std::vector<LogEntry>& entries) {
     std::ofstream file(filename,  std::ios::trunc);
 
@@ -137,58 +136,125 @@ void saveLogFile(const std::string& filename, const std::vector<LogEntry>& entri
     }
 }   
 
-bool addToMeanHourLog( std::vector<LogEntry>& all_log_entries,  std::vector<LogEntry>& hour_log_entries ) {
+/**
+ * @brief Обновить среднее значение за текущий час
+ * 
+ * @param all_log_entries Все записи логов
+ * @param hour_log_entries Записи со средними значениями за час
+ */
+void updateMeanHourLog(std::vector<LogEntry>& all_log_entries, std::vector<LogEntry>& hour_log_entries) {
+
     DateTime now;
+    
+    DateTime current_hour_begin = DateTime(
+        now.getTimestamp() - (now.getTimestamp() % 3600)
+    );
+    DateTime current_hour_end = DateTime(
+        current_hour_begin.getTimestamp() + 3600
+    );
 
-    DateTime hour_begin = DateTime(now.getTimestamp() - (now.getTimestamp() % 3600));
-    DateTime hour_end = DateTime(hour_begin.getTimestamp() + 3600);
+    std::vector<LogEntry> same_hour_entries = {};
 
-    std::vector<LogEntry> same_hour_entries ={};
-
-    auto it = all_log_entries.end();
-
-    while (it != all_log_entries.begin()) {
-        --it;
-        auto entry_time = it->measurement_end;
-        if (entry_time >= hour_begin && entry_time < hour_end) {
-            same_hour_entries.push_back(*it);
-            continue;
-        } 
-        break;
+    for (const auto& entry : all_log_entries) {
+        std::time_t entry_time = entry.measurement_end.getTimestamp();
+        if (entry_time >= current_hour_begin.getTimestamp() && entry_time < current_hour_end.getTimestamp() && entry.have_data) {
+            same_hour_entries.push_back(entry);
+        }
     }
 
-    if (same_hour_entries.empty()){
-        hour_log_entries.push_back(LogEntry(DateTime(hour_begin), DateTime(hour_end), 0, false));
-        return true;
-    }
+    LogEntry new_hour_entry(
+        current_hour_begin,
+        current_hour_end,
+        0,
+        false
+    );
 
-    int mean_value = 0;
-    for (const auto& entry : same_hour_entries) {
-        mean_value += entry.sensor_value;
-    }
-    mean_value /= same_hour_entries.size();
+    if (!same_hour_entries.empty()){
+        int mean_value = 0;
+        for (const auto& entry : same_hour_entries) {
+            mean_value += entry.sensor_value;
+        }
+        mean_value /= same_hour_entries.size();
 
+        new_hour_entry.sensor_value = mean_value;
+        new_hour_entry.have_data = true;
+    }
 
     if (hour_log_entries.empty()) {
-        hour_log_entries.push_back(LogEntry(DateTime(hour_begin), DateTime(hour_end), mean_value));
-        return true;
+        hour_log_entries.push_back(new_hour_entry);
+        return;
     }
 
-    LogEntry last_hour_log  = *( --hour_log_entries.end());
+    LogEntry last_hour_entry = hour_log_entries.back();
 
-    if (last_hour_log_hour == hour_end){
-        return false;
+    if (last_hour_entry.measurement_begin.getTimestamp() == current_hour_begin.getTimestamp()) {
+        hour_log_entries.back() = new_hour_entry;
+    } else {
+        hour_log_entries.push_back(new_hour_entry);
     }
 
-    hour_log_entries.push_back(LogEntry(DateTime(hour_begin), DateTime(hour_end), mean_value));
-
-    return true;
 }
 
-bool addToMeanDayLog( std::vector<LogEntry>& hour_log_entries,  std::vector<LogEntry>& day_log_entries ) {
-    // Similar implementation to addToMeanHourLog but for daily aggregation
-    return true;
+/**
+ * @brief Обновить среднее значение за текущий день
+ * 
+ * @param hour_log_entries Записи со средними значениями за час
+ * @param day_log_entries Записи со средними значениями за день
+ */
+void updateMeanDayLog(std::vector<LogEntry>& hour_log_entries, std::vector<LogEntry>& day_log_entries) {
+
+    DateTime now;
+
+    
+    DateTime current_day_begin = DateTime(
+        now.getTimestamp() - (now.getTimestamp() % 86400)
+    );
+    DateTime current_day_end = DateTime(
+        current_day_begin.getTimestamp() + 86400
+    );
+
+    std::vector<LogEntry> same_day_entries = {};
+
+    for (const auto& entry : hour_log_entries) {
+        std::time_t entry_time = entry.measurement_end.getTimestamp();
+        if (entry_time >= current_day_begin.getTimestamp() && entry_time < current_day_end.getTimestamp() && entry.have_data) {
+            same_day_entries.push_back(entry);
+        }
+    }
+
+    LogEntry new_day_entry(
+        current_day_begin,
+        current_day_end,
+        0,
+        false
+    );
+
+    if (!same_day_entries.empty()){
+        int mean_value = 0;
+        for (const auto& entry : same_day_entries) {
+            mean_value += entry.sensor_value;
+        }
+        mean_value /= same_day_entries.size();
+
+        new_day_entry.sensor_value = mean_value;
+        new_day_entry.have_data = true;
+    }
+
+    if (day_log_entries.empty()) {
+        day_log_entries.push_back(new_day_entry);
+        return;
+    }
+
+    LogEntry last_day_entry = day_log_entries.back();
+
+    if (last_day_entry.measurement_begin.getTimestamp() == current_day_begin.getTimestamp()) {
+        day_log_entries.back() = new_day_entry;
+    } else {
+        day_log_entries.push_back(new_day_entry);
+    }
+
 }
+
 
 int main(int argc, char* argv[]) {
     
@@ -202,7 +268,6 @@ int main(int argc, char* argv[]) {
     std::string mean_hour_log_file_name = argv[3];
     std::string mean_day_log_file_name = argv[4];
 
-    // Create directories if they don't exist
     std::filesystem::create_directories(std::filesystem::path(all_log_file_name).parent_path());
     std::filesystem::create_directories(std::filesystem::path(mean_hour_log_file_name).parent_path());
     std::filesystem::create_directories(std::filesystem::path(mean_day_log_file_name).parent_path());
@@ -225,10 +290,8 @@ int main(int argc, char* argv[]) {
 
     while(true){
 
-        std::string data = com_port.read(1024  );
-
+        std::string data = com_port.read();
         std::vector<LogEntry> new_entries = {};
-
         std::istringstream ss(data);
 
         std::string token;
@@ -263,9 +326,13 @@ int main(int argc, char* argv[]) {
 
         saveLogFile(all_log_file_name, all_log_entries);
 
-        if (addToMeanHourLog(all_log_entries, hour_log_entries)) {
-            saveLogFile(mean_hour_log_file_name, hour_log_entries);
-        }
+        // Обновляем лог со средними значениями за час
+        updateMeanHourLog(all_log_entries, hour_log_entries);
+        saveLogFile(mean_hour_log_file_name, hour_log_entries);
+
+        // Обновляем лог со средними значениями за день
+        updateMeanDayLog(hour_log_entries, day_log_entries);
+        saveLogFile(mean_day_log_file_name, day_log_entries);
         
     }
 
