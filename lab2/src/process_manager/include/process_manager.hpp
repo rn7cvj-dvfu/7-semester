@@ -1,6 +1,3 @@
-#ifndef PROCESS_MANAGER_HPP
-#define PROCESS_MANAGER_HPP
-
 #include <string>
 #include <vector>
 
@@ -141,4 +138,3 @@ namespace ProcessManager {
 
 } 
 
-#endif 
