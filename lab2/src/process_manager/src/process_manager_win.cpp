@@ -164,6 +164,10 @@ namespace ProcessManager {
         }
     }
 
+    int getProcessID() {
+        return static_cast<int>(GetCurrentProcessId());
+    }
+
     LaunchResult launchTerminal(const std::string& command) {
         LaunchResult result;
         result.success = false;

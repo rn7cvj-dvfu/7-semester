@@ -63,6 +63,6 @@ if (-not (Test-Path $ExePath)) {
 
 Write-Host "Запуск $ExeName..." -ForegroundColor Yellow
 Write-Host "Параметры: lab3_counter process.log increment_counter multiply_counter" -ForegroundColor Yellow
-& $ExePath "lab3_counter" "process.log" "increment_counter" "multiply_counter"
+& $ExePath "lab3_counter" "./logs/process.log" "./increment_counter.exe" "./multiply_counter.exe"
 
 Set-Location .. 

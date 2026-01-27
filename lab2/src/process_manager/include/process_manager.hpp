@@ -113,7 +113,11 @@ namespace ProcessManager {
      */
     void closeHandle(ProcessHandle handle);
 
-  
+    /**
+     * @brief Получает идентификатор текущего процесса
+     */
+    int getProcessID();
+
     namespace internal {
         
 #ifdef _WIN32

@@ -48,6 +48,7 @@ namespace SharedMemory {
     /**
      * @brief Класс для работы с разделяемой памятью
      */
+    // template <class T>
     class SharedMemoryManager {
     public:
         /**

@@ -1,56 +1,17 @@
+#include <string>
+#include <filesystem>
 #include <iostream>
 #include <fstream>
-#include <chrono>
-#include <thread>
-#include <iomanip>
-#include <sstream>
-#include "shared_memory.hpp"
 
-#ifdef _WIN32
-    #include <windows.h>
-    #include <process.h>
-#else
-    #include <unistd.h>
-    #include <sys/types.h>
-#endif
+#include <process_manager.hpp>
+#include <shared_memory.hpp>
+#include <threads.hpp>
+#include <time.hpp>
 
+using namespace ProcessManager;
 using namespace SharedMemory;
-
-std::string getCurrentTimestamp() {
-    auto now = std::chrono::system_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
-    auto timer = std::chrono::system_clock::to_time_t(now);
-    std::tm bt;
-    
-#ifdef _WIN32
-    localtime_s(&bt, &timer);
-#else
-    localtime_r(&timer, &bt);
-#endif
-    
-    std::ostringstream oss;
-    oss << std::put_time(&bt, "%Y-%m-%d %H:%M:%S");
-    oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
-    return oss.str();
-}
-
-int64_t getCurrentPid() {
-#ifdef _WIN32
-    return GetCurrentProcessId();
-#else
-    return getpid();
-#endif
-}
-
-std::string g_logFileName = "process.log";
-
-void writeLog(const std::string& message) {
-    std::ofstream logFile(g_logFileName, std::ios::app);
-    if (logFile.is_open()) {
-        logFile << message << std::endl;
-        logFile.close();
-    }
-}
+using namespace Threads;
+using namespace Time;
 
 int main(int argc, char* argv[]) {
     // Проверка обязательных параметров
@@ -62,54 +23,29 @@ int main(int argc, char* argv[]) {
     // Парсинг аргументов командной строки
     std::string shmName = argv[1];
     std::string logFileName = argv[2];
-    
-    int64_t pid = getCurrentPid();
-    std::string startTime = getCurrentTimestamp();
-    
-    // Устанавливаем имя лог-файла
-    g_logFileName = logFileName;
-    
-    // Подключаемся к разделяемой памяти
-    SharedMemoryManager shm(shmName);
-    
-    if (!shm.isValid()) {
-        std::cerr << "Failed to connect to shared memory" << std::endl;
+
+        
+    SharedMemoryManager sharedMem(shmName);
+
+    if (!sharedMem.isValid()) {
+        std::cerr << "Error initializing shared memory." << std::endl;
         return 1;
     }
     
-    // Записываем информацию о запуске
-    std::ostringstream startMsg;
-    startMsg << "[COPY2] PID: " << pid << " | Start: " << startTime;
-    writeLog(startMsg.str());
+
+    int pid = ProcessManager::getProcessID();
+    std::string time = Time::GetCurrentTimeString();
+
+    std::ofstream log = std::ofstream(logFileName, std::ios::trunc);
+
+    log << "[" << time << "]\tMultiply started\t\t\t| PID: " << pid << std::endl;
     
-    // Умножаем счетчик на 2
-    shm.lock();
-    shm.getData()->counter *= 2;
-    int64_t afterMultiply = shm.getData()->counter;
-    shm.unlock();
+
+    sharedMem.lock();
+    sharedMem.getData()->counter *= 2;
+    sharedMem.unlock();
     
-    std::ostringstream multiplyMsg;
-    multiplyMsg << "[COPY2] PID: " << pid << " | Counter multiplied by 2, new value: " << afterMultiply;
-    writeLog(multiplyMsg.str());
-    
-    // Ждем 2 секунды
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-    
-    // Делим счетчик на 2
-    shm.lock();
-    shm.getData()->counter /= 2;
-    int64_t afterDivide = shm.getData()->counter;
-    shm.unlock();
-    
-    std::ostringstream divideMsg;
-    divideMsg << "[COPY2] PID: " << pid << " | Counter divided by 2, new value: " << afterDivide;
-    writeLog(divideMsg.str());
-    
-    // Записываем информацию о завершении
-    std::string endTime = getCurrentTimestamp();
-    std::ostringstream endMsg;
-    endMsg << "[COPY2] PID: " << pid << " | End: " << endTime;
-    writeLog(endMsg.str());
-    
+    log << "[" << time << "]\tMultiply finished\t\t\t| PID: " << pid << std::endl;
+
     return 0;
 }

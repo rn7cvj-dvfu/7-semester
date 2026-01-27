@@ -159,6 +159,10 @@ namespace ProcessManager {
         (void)handle;
     }
 
+    int getProcessID() {
+        return static_cast<int>(getpid());
+    }
+
     namespace internal {
 
         char** buildArgv(

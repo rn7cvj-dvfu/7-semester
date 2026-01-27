@@ -4,7 +4,6 @@ param(
     [Parameter(Position=0, ValueFromRemainingArguments=$true)]
     [string[]]$SensorArgs = @("COM10", "25", "42", "1000", "100"),
     [string[]]$LoggerArgs = @("COM11",  "./logs/all.log", "./logs/hour.log", "./logs/day.log")
-
 )
 
 $BuildDir = "build"
