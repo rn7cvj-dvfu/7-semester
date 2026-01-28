@@ -42,7 +42,7 @@ namespace ProcessManager {
         return result;
     }
 
-    LaunchResult launchTerminal(const std::vector<std::string>& args = {}) {
+    LaunchResult launchTerminal(const std::vector<std::string>& args) {
         LaunchResult result;
         result.success = false;
         result.handle = -1;

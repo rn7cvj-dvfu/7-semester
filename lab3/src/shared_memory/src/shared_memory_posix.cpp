@@ -192,5 +192,6 @@ void SharedMemoryManager::destroySemaphore() {
         sem_handle_ = INVALID_SEM_HANDLE;
     }
 }
+}
 
 

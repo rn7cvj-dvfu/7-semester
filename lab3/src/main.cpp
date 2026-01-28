@@ -111,7 +111,7 @@ public:
         const std::string& executable_path,
         const std::vector<std::string>& args,
         double sleep_seconds = 0.0
-    ) : _executable_path(executable_path), _args(args), _sleep_seconds(sleep_seconds), _process_handle(nullptr) {
+    ) : _executable_path(executable_path), _args(args), _sleep_seconds(sleep_seconds), _process_handle(-1) {
     }
 
     int MainStart() override {
@@ -122,13 +122,13 @@ public:
         while (true) {
             SpawnThread::Sleep(_sleep_seconds);
 
-            if (_process_handle != nullptr) {
+            if (_process_handle != -1) {
                 bool running = ProcessManager::isProcessRunning(_process_handle);
                 if (running) {
                     continue;
                 }  
                 ProcessManager::closeHandle(_process_handle);
-                _process_handle = nullptr;
+                _process_handle = -1;
             }
         
             LaunchResult result = ProcessManager::launchProcess(_executable_path, {} , true);

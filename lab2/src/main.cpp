@@ -34,7 +34,8 @@ int main() {
     return 1;
 #endif
 
-    ProcessManager::LaunchResult launch_result = ProcessManager::launchTerminal(hello_world_args);
+    // ProcessManager::LaunchResult launch_result = ProcessManager::launchTerminal(hello_world_args);
+    ProcessManager::LaunchResult launch_result = ProcessManager::launchProcess(terminal, hello_world_args);
 
     if (!launch_result.success) {
         std::cerr << "Ошибка запуска процесса: " << launch_result.error << "\n";
