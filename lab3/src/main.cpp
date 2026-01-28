@@ -119,28 +119,31 @@ public:
 
     void Main() override {
         while (true) {
-            // // Проверяем процесс только если он был запущен
-            // if (_processHandle != nullptr) {
-            //     bool running = ProcessManager::isProcessRunning(_processHandle);
-            //     if (running) {
-            //         SpawnThread::Sleep(0.1); // Короткая проверка
-            //         CancelPoint();
-            //         continue;
-            //     }  
-            //     ProcessManager::closeHandle(_processHandle);
-            //     _processHandle = nullptr;
-            // }
+            SpawnThread::Sleep(_sleepSeconds);
+
+            if (_processHandle != nullptr) {
+                bool running = ProcessManager::isProcessRunning(_processHandle);
+                if (running) {
+                    continue;
+                }  
+                ProcessManager::closeHandle(_processHandle);
+                _processHandle = nullptr;
+            }
         
-            // LaunchResult result = ProcessManager::launchProcess(_executablePath, _args);
-            // if (result.success) {
-            //     _processHandle = result.handle;
-                
+            LaunchResult result = ProcessManager::launchProcess(_executablePath, {} , true);
+            
+            // std::vector<std::string> launchArgs = _args;
+            // launchArgs.insert(launchArgs.begin(), _executablePath);
+            // LaunchResult result = ProcessManager::launchTerminal(launchArgs);
+
+            if (result.success) {
+                _processHandle = result.handle;
    
-            //     SpawnThread::Sleep(_sleepSeconds);
-            // } else {
-            //     std::cerr << "[SPAWN:" << _executablePath << "] ERROR: Failed to launch process: " << result.error << std::endl;
-            //     SpawnThread::Sleep(_sleepSeconds);
-            // }
+                SpawnThread::Sleep(_sleepSeconds);
+            } else {
+                std::cerr << "[SPAWN:" << _executablePath << "] ERROR: Failed to launch process: " << result.error << std::endl;
+             
+            }
                  
             CancelPoint();
         }
@@ -167,7 +170,8 @@ int main(int argc, char* argv[]) {
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
-    
+
+
 
     if (argc < 5) {
         std::cerr << "Usage: " << argv[0] << " <shmName> <logFileName> <incrementExe> <multiplyExe>" << std::endl;
@@ -180,19 +184,24 @@ int main(int argc, char* argv[]) {
     std::string multiplyExe = argv[4];
 
     // // Преобразование в абсолютные пути
-    // auto absLogPath = std::filesystem::absolute(logFileName).string();
+    auto absLogPath = std::filesystem::absolute(logFileName).string();
     // auto absIncrementExe = std::filesystem::absolute(incrementExe).string();
     // auto absMultiplyExe = std::filesystem::absolute(multiplyExe).string();
 
+    std::cout << "Log file path: " << absLogPath << std::endl;
+
     std::filesystem::create_directories(std::filesystem::path(logFileName).parent_path());
-    
-    SharedMemoryManager sharedMem(shmName);
+
+
+        SharedMemoryManager sharedMem(shmName);
 
 
     if (!sharedMem.isValid()) {
         std::cerr << "Error initializing shared memory." << std::endl;
         return 1;
     }
+
+    bool isMaster = sharedMem.tryBecomeMaster(ProcessManager::getProcessID());
     
     LoggerThread loggerThread(
         &sharedMem,
@@ -203,27 +212,32 @@ int main(int argc, char* argv[]) {
 
     SpawnThread incrementSpawnerThread(
         incrementExe,
-        { shmName, logFileName },
+        {  shmName , absLogPath    },
         3.0
     );
 
 
     SpawnThread multiplySpawnerThread(
         multiplyExe,
-        { shmName, logFileName },
+        { shmName, absLogPath },
         3.0
     );
-
  
     loggerThread.Start();
     incrementThread.Start();
-    incrementSpawnerThread.Start();
-    multiplySpawnerThread.Start();
+
+    if (isMaster){
+        incrementSpawnerThread.Start();
+        multiplySpawnerThread.Start();    
+    }
     
     loggerThread.WaitStartup();
     incrementThread.WaitStartup();
-    incrementSpawnerThread.WaitStartup();
-    multiplySpawnerThread.WaitStartup();
+
+    if (isMaster){
+        incrementSpawnerThread.WaitStartup();
+        multiplySpawnerThread.WaitStartup();
+    }
     
     std::string cmd;
     int value;
@@ -257,13 +271,19 @@ int main(int argc, char* argv[]) {
 
     loggerThread.Stop();
     incrementThread.Stop();
-    incrementSpawnerThread.Stop();
-    multiplySpawnerThread.Stop();   
+
+    if (isMaster){
+        incrementSpawnerThread.Stop();
+        multiplySpawnerThread.Stop();   
+    }
 
     loggerThread.Join();   
     incrementThread.Join();
-    incrementSpawnerThread.Join();
-    multiplySpawnerThread.Join();
+
+    if (isMaster){
+        incrementSpawnerThread.Join();
+        multiplySpawnerThread.Join();
+    }
     
 #ifdef _WIN32
     std::cin.get();

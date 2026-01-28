@@ -27,7 +27,7 @@ namespace ProcessManager {
         cmdLineBuffer.push_back(L'\0');
         
         DWORD creationFlags = silent ? CREATE_NO_WINDOW : CREATE_NEW_CONSOLE;
-        
+
         if (!CreateProcessW(
                 NULL,                   // Имя модуля (NULL = использовать командную строку)
                 cmdLineBuffer.data(),   // Командная строка

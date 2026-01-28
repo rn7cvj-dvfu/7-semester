@@ -13,60 +13,40 @@ using namespace SharedMemory;
 using namespace Threads;
 using namespace Time;
 
+std::string g_shmName = "lab3_counter";
+std::string g_logFileName = "./logs/log.log";
+
 int main(int argc, char* argv[]) {
 
-#ifdef _WIN32
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-#endif
-
-    // Проверка обязательных параметров
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <shmName> <logFileName>" << std::endl;
-        return 1;
-    }
-    
-    // Парсинг аргументов командной строки
-    std::string shmName = argv[1];
-    std::string logFileName = argv[2];
-
-    std::ofstream log = std::ofstream(logFileName, std::ios::app);
-    
-    if (!log.is_open()) {
-        return 1;
-    }
-
-    int pid = ProcessManager::getProcessID();
-    std::string timeStart = Time::GetCurrentTimeString();
-
-    log << "[" << timeStart << "]\t[INCREMENT] Starting with args: shmName=" << shmName << "\t| PID: " << pid << std::endl;
-    log.flush();
         
-    SharedMemoryManager sharedMem(shmName);
+    SharedMemoryManager sharedMem(g_shmName);
 
     if (!sharedMem.isValid()) {
-        log << "[" << timeStart << "]\t[INCREMENT] ERROR: Failed to open shared memory\t| PID: " << pid << std::endl;
-        log.flush();
+        std::cerr << "Error initializing shared memory." << std::endl;
         return 1;
     }
     
-    log << "[" << timeStart << "]\t[INCREMENT] Shared memory opened successfully\t| PID: " << pid << std::endl;
-    log.flush();
 
-    log << "[" << timeStart << "]\tIncrement started\t\t\t| PID: " << pid << std::endl;
+    int pid = ProcessManager::getProcessID();
+     std::string timeStart = Time::GetCurrentTimeString();
+
+    std::ofstream log = std::ofstream(g_logFileName, std::ios::app);
+
+ 
+    if (!log.is_open()){
+        std::cerr <<"ERROR: Failed to open log file" << std::endl;
+        return 1;
+    }
+
+    log << "[" << timeStart << "]\tIncrement started\t\t| PID: " << pid << std::endl;
     log.flush();
 
     sharedMem.lock();
-    int oldValue = sharedMem.getData()->counter;
     sharedMem.getData()->counter += 10;
-    int newValue = sharedMem.getData()->counter;
     sharedMem.unlock();
     
-    log << "[" << timeStart << "]\t[INCREMENT] Counter: " << oldValue << " -> " << newValue << "\t| PID: " << pid << std::endl;
-    log.flush();
-    
     std::string timeEnd = Time::GetCurrentTimeString();
-    log << "[" << timeEnd << "]\tIncrement finished\t\t\t| PID: " << pid << std::endl;
+    log << "[" << timeEnd << "]\tIncrement finished\t\t| PID: " << pid << std::endl;
     log.flush();
     log.close();
 
