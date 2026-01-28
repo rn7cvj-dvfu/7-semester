@@ -111,7 +111,7 @@ public:
         const std::string& executable_path,
         const std::vector<std::string>& args,
         double sleep_seconds = 0.0
-    ) : _executable_path(executable_path), _args(args), _sleep_seconds(sleep_seconds), _process_handle(-1) {
+    ) : _executable_path(executable_path), _args(args), _sleep_seconds(sleep_seconds), _process_handle(InvalidHandler) {
     }
 
     int MainStart() override {
@@ -122,21 +122,20 @@ public:
         while (true) {
             SpawnThread::Sleep(_sleep_seconds);
 
-            if (_process_handle != -1) {
+            if (_process_handle != InvalidHandler) {
                 bool running = ProcessManager::isProcessRunning(_process_handle);
                 if (running) {
+                    std::cerr << "[SPAWN:" << _executable_path << "] INFO: Process is still running. Skipping spawn." << std::endl;
                     continue;
                 }  
                 ProcessManager::closeHandle(_process_handle);
-                _process_handle = -1;
+                _process_handle = InvalidHandler;
             }
         
-            LaunchResult result = ProcessManager::launchProcess(_executable_path, {} , true);
+            LaunchResult result = ProcessManager::launchProcess(_executable_path, _args, true);
 
             if (result.success) {
                 _process_handle = result.handle;
-   
-                SpawnThread::Sleep(_sleep_seconds);
             } else {
                 std::cerr << "[SPAWN:" << _executable_path << "] ERROR: Failed to launch process: " << result.error << std::endl;
              
@@ -182,6 +181,8 @@ int main(int argc, char* argv[]) {
     std::string abs_increment_exe = std::filesystem::absolute(increment_exe).string();
     std::string abs_multiply_exe = std::filesystem::absolute(multiply_exe).string();
 
+
+
     std::filesystem::create_directories(std::filesystem::path(log_file_name).parent_path());
 
     SharedMemoryManager shared_mem(shm_name);
@@ -192,6 +193,12 @@ int main(int argc, char* argv[]) {
     }
 
     bool is_master = shared_mem.tryBecomeMaster(ProcessManager::getProcessID());
+
+    std::cout << "Shared memory initialized. Master status: " << (is_master ? "Yes" : "No") << std::endl;
+    std::cout << "Absolute paths:" << std::endl;
+    std::cout << " Log file: " << abs_log_path << std::endl;
+    std::cout << " Increment exe: " << abs_increment_exe << std::endl;
+    std::cout << " Multiply exe: " << abs_multiply_exe << std::endl;
     
     LoggerThread logger_thread(
         &shared_mem,

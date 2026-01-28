@@ -3,6 +3,7 @@
 # Параметры
 PULL=false
 REBUILD=false
+CLEAN=false
 ARGS=("lab3_counter" "./logs/log.log" "increment_counter" "multiply_counter")
 
 # Парсинг аргументов
@@ -16,9 +17,13 @@ while [[ $# -gt 0 ]]; do
             REBUILD=true
             shift
             ;;
+        --clean)
+            CLEAN=true
+            shift
+            ;;
         *)
             # Если передали аргументы, перезаписываем значения по умолчанию
-            if [ ${#ARGS[@]} -eq 4 ] && [ "$1" != "--pull" ] && [ "$1" != "--rebuild" ]; then
+            if [ ${#ARGS[@]} -eq 4 ] && [ "$1" != "--pull" ] && [ "$1" != "--rebuild" ] && [ "$1" != "--clean" ]; then
                 ARGS=()
             fi
             ARGS+=("$1")
@@ -29,6 +34,15 @@ done
 
 BUILD_DIR="build"
 EXE_NAME="lab3"
+
+# 0. Очистка старых ресурсов разделяемой памяти и семафоров
+if [ "$CLEAN" = true ]; then
+    echo "Cleaning POSIX shared memory and semaphores..."
+    rm -f /dev/shm/lab3_counter* 2>/dev/null
+    # Удаляем семафоры через ipcrm если они существуют
+    ipcrm -M 0x6c616233 2>/dev/null || true
+    ipcrm -S 0x6c616233 2>/dev/null || true
+fi
 
 # 1. Обновление репозитория
 if [ "$PULL" = true ]; then

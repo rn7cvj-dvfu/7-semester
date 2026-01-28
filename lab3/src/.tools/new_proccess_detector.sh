@@ -1,21 +1,16 @@
 #!/bin/bash
 
-# Функция для получения списка процессов
 get_processes() {
     ps -eo pid,comm --no-headers | sort -n
 }
 
-# Сохраняем текущий список процессов
-previous=$(get_processes)
+
 
 while true; do
     sleep 0.1
     
-    # Получаем актуальный список процессов
-    current=$(get_processes)
-    
-    # Находим новые процессы
-    new_processes=$(comm -13 <(echo "$previous") <(echo "$current"))
+
+    new_processes=$(get_processes) | grep "counter"
     
     if [ -n "$new_processes" ]; then
         echo "$new_processes" | while read -r line; do
@@ -25,6 +20,5 @@ while true; do
         done
     fi
     
-    # Обновляем список
-    previous="$current"
+
 done
