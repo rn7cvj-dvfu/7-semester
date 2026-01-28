@@ -30,6 +30,16 @@ SharedMemoryManager::SharedMemoryManager(const std::string& name)
         data_->process_count = 0;
         data_->is_master_active = false;
         data_->master_pid = 0;
+    } else if (isValid() && !is_creator_) {
+        // Если не создатель, но разделяемая память уже существует,
+        // проверяем, не остались ли старые данные от предыдущего запуска
+        // Инициализируем флаг мастера, если это первый процесс
+        lock();
+        if (data_->process_count == 0) {
+            data_->is_master_active = false;
+            data_->master_pid = 0;
+        }
+        unlock();
     }
 
     if (isValid()) {
@@ -191,6 +201,7 @@ void SharedMemoryManager::destroySemaphore() {
         sem_unlink(sem_name.c_str());
         sem_handle_ = INVALID_SEM_HANDLE;
     }
+}
 }
 
 

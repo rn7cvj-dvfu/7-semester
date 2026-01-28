@@ -18,6 +18,7 @@ namespace ProcessManager {
     constexpr ProcessHandle InvalidHandler = -1;
 #endif
 
+
     /**
      * @brief Результат запуска процесса
      * @param success Успешность запуска

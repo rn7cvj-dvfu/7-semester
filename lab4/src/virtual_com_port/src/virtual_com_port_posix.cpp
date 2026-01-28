@@ -15,15 +15,15 @@ namespace VirtualCOM {
 
 VirtualComPort::VirtualComPort() 
     : fd_(-1)
-    , isOpen_(false)
-    , baudRate_(9600) {
+    , is_open_(false)
+    , baud_rate_(9600) {
 }
 
 VirtualComPort::VirtualComPort(const std::string& portName, int baudRate) 
     : fd_(-1)
-    , isOpen_(false)
-    , baudRate_(baudRate)
-    , portName_(portName) {
+    , is_open_(false)
+    , baud_rate_(baudRate)
+    , port_name_(portName) {
     
     fd_ = ::open(portName.c_str(), O_RDWR | O_NOCTTY);
     if (fd_ == -1) {
@@ -36,7 +36,7 @@ VirtualComPort::VirtualComPort(const std::string& portName, int baudRate)
         throw std::runtime_error("Failed to configure port " + portName);
     }
 
-    isOpen_ = true;
+    is_open_ = true;
 }
 
 VirtualComPort::~VirtualComPort() {
@@ -44,19 +44,19 @@ VirtualComPort::~VirtualComPort() {
 }
 
 void VirtualComPort::close() {
-    if (isOpen_ && fd_ != -1) {
+    if (is_open_ && fd_ != -1) {
         ::close(fd_);
         fd_ = -1;
-        isOpen_ = false;
+        is_open_ = false;
     }
 }
 
 bool VirtualComPort::isOpen() const {
-    return isOpen_;
+    return is_open_;
 }
 
 int VirtualComPort::write(const std::string& data) {
-    if (!isOpen_ || fd_ == -1) {
+    if (!is_open_ || fd_ == -1) {
         return -1;
     }
 
@@ -65,7 +65,7 @@ int VirtualComPort::write(const std::string& data) {
 }
 
 std::string VirtualComPort::read(size_t maxBytes, int timeoutMs) {
-    if (!isOpen_ || fd_ == -1) {
+    if (!is_open_ || fd_ == -1) {
         return "";
     }
 
@@ -108,11 +108,11 @@ bool VirtualComPort::configureUnixPort() {
         return false;
     }
 
-    oldTermios_ = tty;
+    old_termios_ = tty;
 
     // Установка скорости передачи
     speed_t speed;
-    switch (baudRate_) {
+    switch (baud_rate_) {
         case 9600:   speed = B9600; break;
         case 19200:  speed = B19200; break;
         case 38400:  speed = B38400; break;

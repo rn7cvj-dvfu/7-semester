@@ -86,7 +86,7 @@ struct LogEntry {
 
 std::vector<LogEntry> parseLogFile(const std::string& filename) {
     std::vector<LogEntry> entries;
-    std::ifstream file(filename , std::ios::app);
+    std::ifstream file(filename);
 
     if (!file.is_open()) {
         std::cerr << "Could not open log file: " << filename << std::endl;
@@ -123,7 +123,7 @@ std::vector<LogEntry> filterByLiveTime(
 }
 
 void saveLogFile(const std::string& filename, const std::vector<LogEntry>& entries) {
-    std::ofstream file(filename,  std::ios::trunc);
+    std::ofstream file(filename, std::ios::trunc);
 
     if (!file.is_open()) {
         std::cerr << "Could not open log file for writing: " << filename << std::endl;
@@ -132,6 +132,17 @@ void saveLogFile(const std::string& filename, const std::vector<LogEntry>& entri
 
     for (const auto& entry : entries) {
         file << entry.toString() << std::endl;
+    }
+    file.flush();
+}
+
+void ensureLogFileExists(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.good()) {
+        std::ofstream new_file(filename);
+        if (new_file.is_open()) {
+            new_file.close();
+        }
     }
 }   
 
@@ -271,6 +282,11 @@ int main(int argc, char* argv[]) {
     std::filesystem::create_directories(std::filesystem::path(mean_hour_log_file_name).parent_path());
     std::filesystem::create_directories(std::filesystem::path(mean_day_log_file_name).parent_path());
 
+    // Убеждаемся, что файлы логов существуют
+    ensureLogFileExists(all_log_file_name);
+    ensureLogFileExists(mean_hour_log_file_name);
+    ensureLogFileExists(mean_day_log_file_name);
+
     VirtualCOM::VirtualComPort com_port(com_port_name);
 
     if (!com_port.isOpen()) {
@@ -290,6 +306,12 @@ int main(int argc, char* argv[]) {
     while(true){
 
         std::string data = com_port.read();
+        
+        if (data.empty()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+        
         std::vector<LogEntry> new_entries = {};
         std::istringstream ss(data);
 
@@ -313,7 +335,8 @@ int main(int argc, char* argv[]) {
                 int sensor_value = std::stoi(value_part);
                 std::time_t timestamp = static_cast<std::time_t>(std::stoll(time_part));
 
-                LogEntry entry(DateTime(timestamp), DateTime(timestamp), sensor_value);
+                DateTime dt(timestamp);
+                LogEntry entry(dt, dt, sensor_value);
                 new_entries.push_back(entry);
 
             } catch (const std::exception& e) {
@@ -321,18 +344,18 @@ int main(int argc, char* argv[]) {
             }
         }
         
-        all_log_entries.insert(all_log_entries.end(), new_entries.begin(), new_entries.end());
+        if (!new_entries.empty()) {
+            all_log_entries.insert(all_log_entries.end(), new_entries.begin(), new_entries.end());
 
-        saveLogFile(all_log_file_name, all_log_entries);
+            saveLogFile(all_log_file_name, all_log_entries);
 
-        updateMeanHourLog(all_log_entries, hour_log_entries);
-        saveLogFile(mean_hour_log_file_name, hour_log_entries);
+            updateMeanHourLog(all_log_entries, hour_log_entries);
+            saveLogFile(mean_hour_log_file_name, hour_log_entries);
 
-        updateMeanDayLog(hour_log_entries, day_log_entries);
-        saveLogFile(mean_day_log_file_name, day_log_entries);
-        
+            updateMeanDayLog(hour_log_entries, day_log_entries);
+            saveLogFile(mean_day_log_file_name, day_log_entries);
+        }
     }
-
 
     return 0;
 }

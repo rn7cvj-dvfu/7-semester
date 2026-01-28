@@ -42,7 +42,7 @@ namespace ProcessManager {
         return result;
     }
 
-    LaunchResult launchTerminal(const std::vector<std::string>& args = {}) {
+    LaunchResult launchTerminal(const std::vector<std::string>& args) {
         LaunchResult result;
         result.success = false;
         result.handle = -1;
@@ -127,13 +127,22 @@ namespace ProcessManager {
     bool isProcessRunning(ProcessManager::ProcessHandle handle) {
         if (handle <= 0) return false;
 
-        int result = kill(handle, 0);
+        int status;
+        pid_t result = waitpid(handle, &status, WNOHANG);
+        
+        if (result == handle) {
+            // Процесс завершился, статус собран
+            return false;
+        }
         
         if (result == 0) {
+            // Процесс ещё работает
             return true;
         }
         
+        // result == -1, произошла ошибка
         if (errno == ESRCH) {
+            // Процесс не существует
             return false;
         }
         
