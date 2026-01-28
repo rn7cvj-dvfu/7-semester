@@ -12,8 +12,10 @@ namespace ProcessManager {
 
 #ifdef _WIN32
     using ProcessHandle = HANDLE;
+    constexpr ProcessHandle InvalidHandler = NULL;
 #elif defined(__unix__)
     using ProcessHandle = pid_t;
+    constexpr ProcessHandle InvalidHandler = -1;
 #endif
 
     /**
