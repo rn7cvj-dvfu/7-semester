@@ -29,19 +29,18 @@ class LoggerThread : public Thread{
         }
 
         int MainStart() override {
-            _log = std::ofstream(_logFilePath, std::ios::trunc);
-        
-            if (!_log.is_open()) {
-                std::cerr << "Error opening log file." << std::endl;
-                return 1;
-            }
+        _log = std::ofstream(_logFilePath, std::ios::app);
+    
+        if (!_log.is_open()) {
+            std::cerr << "[LOGGER] ERROR: Failed to open log file" << std::endl;
+            return 1;
+        }
 
-            int pid = ProcessManager::getProcessID();
-            std::string time = Time::GetCurrentTimeString();
+        int pid = ProcessManager::getProcessID();
+        std::string time = Time::GetCurrentTimeString();
 
-            _log << "[" << time << "]\tLogger started\t\t\t| PID: " << pid << std::endl;
-            _log.flush();
-        
+        _log << "[" << time << "]\tLogger started\t\t\t| PID: " << pid << std::endl;
+        _log.flush();
             return 0;
         }
 
@@ -63,11 +62,11 @@ class LoggerThread : public Thread{
         }
 
         void MainQuit()override {
-             int pid = ProcessManager::getProcessID();
-            std::string time = Time::GetCurrentTimeString();
+        int pid = ProcessManager::getProcessID();
+        std::string time = Time::GetCurrentTimeString();
 
-            _log << "[" << time << "]\tLogger stopping\t\t\t| PID: " << pid << std::endl;
-            _log.flush();
+        _log << "[" << time << "]\tLogger stopping\t\t\t| PID: " << pid << std::endl;
+        _log.flush();
         }
 
 private:
@@ -82,6 +81,10 @@ public:
     IncrementThread(SharedMemoryManager *sharedMemory) : _sharedMemory(sharedMemory) {
     }
 
+    int MainStart() override {
+        return 0;
+    }
+
     void Main() override {
         while (true) {
             IncrementThread::Sleep(0.3);
@@ -90,6 +93,9 @@ public:
             _sharedMemory->unlock();
             CancelPoint();
         }
+    }
+
+    void MainQuit() override {
     }
 
 private:
@@ -103,31 +109,38 @@ public:
     SpawnThread(
         const std::string& executablePath,
         const std::vector<std::string>& args,
-        int sleepSeconds = 0
+        double sleepSeconds = 0.0
     ) : _executablePath(executablePath), _args(args), _sleepSeconds(sleepSeconds), _processHandle(nullptr) {
     }
 
     int MainStart() override {
-       return 0;
+        return 0;
     }
 
     void Main() override {
-
         while (true) {
-            SpawnThread::Sleep(_sleepSeconds);    
-         
-            bool running = ProcessManager::isProcessRunning(_processHandle);
-            if (running) {
-                continue;
-            }  
-            ProcessManager::closeHandle(_processHandle);
+            // // Проверяем процесс только если он был запущен
+            // if (_processHandle != nullptr) {
+            //     bool running = ProcessManager::isProcessRunning(_processHandle);
+            //     if (running) {
+            //         SpawnThread::Sleep(0.1); // Короткая проверка
+            //         CancelPoint();
+            //         continue;
+            //     }  
+            //     ProcessManager::closeHandle(_processHandle);
+            //     _processHandle = nullptr;
+            // }
         
-            LaunchResult result = ProcessManager::launchProcess(_executablePath, _args);
-            if (result.success) {
-                _processHandle = result.handle;			// мьютекс должен быть залочен тут!;
-            } else {
-                std::cerr << "Failed to launch process: " << result.error << std::endl;
-            }
+            // LaunchResult result = ProcessManager::launchProcess(_executablePath, _args);
+            // if (result.success) {
+            //     _processHandle = result.handle;
+                
+   
+            //     SpawnThread::Sleep(_sleepSeconds);
+            // } else {
+            //     std::cerr << "[SPAWN:" << _executablePath << "] ERROR: Failed to launch process: " << result.error << std::endl;
+            //     SpawnThread::Sleep(_sleepSeconds);
+            // }
                  
             CancelPoint();
         }
@@ -140,11 +153,11 @@ public:
 
 private:
 
-    int _sleepSeconds;
+    double _sleepSeconds;
     ProcessManager::ProcessHandle _processHandle;
 
     std::string _executablePath;
-    const std::vector<std::string>& _args;
+    std::vector<std::string> _args;
 
 };
 
@@ -155,6 +168,7 @@ int main(int argc, char* argv[]) {
     SetConsoleCP(CP_UTF8);
 #endif
     
+
     if (argc < 5) {
         std::cerr << "Usage: " << argv[0] << " <shmName> <logFileName> <incrementExe> <multiplyExe>" << std::endl;
         return 1;
@@ -164,10 +178,16 @@ int main(int argc, char* argv[]) {
     std::string logFileName = argv[2];
     std::string incrementExe = argv[3];
     std::string multiplyExe = argv[4];
-    
+
+    // // Преобразование в абсолютные пути
+    // auto absLogPath = std::filesystem::absolute(logFileName).string();
+    // auto absIncrementExe = std::filesystem::absolute(incrementExe).string();
+    // auto absMultiplyExe = std::filesystem::absolute(multiplyExe).string();
+
     std::filesystem::create_directories(std::filesystem::path(logFileName).parent_path());
     
     SharedMemoryManager sharedMem(shmName);
+
 
     if (!sharedMem.isValid()) {
         std::cerr << "Error initializing shared memory." << std::endl;
@@ -178,40 +198,48 @@ int main(int argc, char* argv[]) {
         &sharedMem,
         logFileName
     );
+    
     IncrementThread incrementThread(&sharedMem);
 
-       SpawnThread incrementSpawnerThread(
+    SpawnThread incrementSpawnerThread(
         incrementExe,
-        { shmName ,logFileName },
-        3
+        { shmName, logFileName },
+        3.0
     );
 
 
-    // SpawnThread multiplySpawnerThread(
-    //     multiplyExe,
-    //     { shmName, logFileName },
-    //     3
-    // );
+    SpawnThread multiplySpawnerThread(
+        multiplyExe,
+        { shmName, logFileName },
+        3.0
+    );
 
  
     loggerThread.Start();
     incrementThread.Start();
     incrementSpawnerThread.Start();
-    // multiplySpawnerThread.Start();
+    multiplySpawnerThread.Start();
     
     loggerThread.WaitStartup();
     incrementThread.WaitStartup();
     incrementSpawnerThread.WaitStartup();
-    // multiplySpawnerThread.WaitStartup();
-
-    std::cout << "set <int> - установить значение счетчика\nexit - завершение программы" << std::endl;
+    multiplySpawnerThread.WaitStartup();
     
     std::string cmd;
     int value;
     
+    
     while(true){
-
+        std::cout << "> " << std::flush;
         std::cin >> cmd;
+        
+        if (std::cin.eof()) {
+            break;
+        }
+        
+        if (std::cin.fail()) {
+            break;
+        }
 
 
         if (cmd == "set"){
@@ -224,26 +252,23 @@ int main(int argc, char* argv[]) {
         if (cmd == "exit"){
             break;
         }
-        std::cout << "Unknown command." << std::endl;
 
     }
 
     loggerThread.Stop();
     incrementThread.Stop();
     incrementSpawnerThread.Stop();
-    // multiplySpawnerThread.Stop();   
+    multiplySpawnerThread.Stop();   
 
     loggerThread.Join();   
     incrementThread.Join();
     incrementSpawnerThread.Join();
-    // multiplySpawnerThread.Join();
+    multiplySpawnerThread.Join();
     
 #ifdef _WIN32
-    
-    std::cout << "\nНажмите Enter для выхода...";
     std::cin.get();
-
 #endif      
 
     return 0;
+        
 }
