@@ -11,7 +11,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3/include/sqlite3.h")
     
     # Создаём библиотеку SQLite3 из amalgamation
     add_library(sqlite3 STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3/include/sqlite3.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3/src/sqlite3.c
         ${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3/include/sqlite3.h
     )
     
