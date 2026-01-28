@@ -179,6 +179,8 @@ int main(int argc, char* argv[]) {
     std::string multiply_exe = argv[4];
 
     std::string abs_log_path = std::filesystem::absolute(log_file_name).string();
+    std::string abs_increment_exe = std::filesystem::absolute(increment_exe).string();
+    std::string abs_multiply_exe = std::filesystem::absolute(multiply_exe).string();
 
     std::filesystem::create_directories(std::filesystem::path(log_file_name).parent_path());
 
@@ -199,13 +201,13 @@ int main(int argc, char* argv[]) {
     IncrementThread increment_thread(&shared_mem);
 
     SpawnThread increment_spawner_thread(
-        increment_exe,
+        abs_increment_exe,
         {  shm_name , abs_log_path    },
         3.0
     );
 
     SpawnThread multiply_spawner_thread(
-        multiply_exe,
+        abs_multiply_exe,
         { shm_name, abs_log_path },
         3.0
     );
