@@ -14,7 +14,7 @@ using namespace ProcessManager;
 
 #ifdef _WIN32
  
-    std::string terminal = "calc.exe";
+    std::string terminal = "cmd.exe";
     std::vector<std::string> helloWorldArgs = { "/C echo Hello, World! && pause" };
 
 #endif
@@ -45,8 +45,8 @@ int main() {
 #endif
 
 
-    ProcessManager::LaunchResult launchResult =  ProcessManager::launchProcess(terminal);
-//    ProcessManager::LaunchResult launchResult =  ProcessManager::launchTerminal(helloWorldArgs);
+    // ProcessManager::LaunchResult launchResult =  ProcessManager::launchProcess(terminal);
+   ProcessManager::LaunchResult launchResult =  ProcessManager::launchTerminal(helloWorldArgs);
 
 
     if (!launchResult.success) {

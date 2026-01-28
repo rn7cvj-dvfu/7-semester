@@ -1,6 +1,7 @@
 param(
     [switch]$Pull,
     [switch]$Rebuild,
+    [Parameter(Position=0, ValueFromRemainingArguments=$true)]
     [string[]]$Args = @("lab3_counter", "./logs/log.log", "increment_counter.exe", "multiply_counter.exe")
 )
 

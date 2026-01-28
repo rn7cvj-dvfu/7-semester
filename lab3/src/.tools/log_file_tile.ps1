@@ -1,0 +1,1 @@
+Get-Content .\build\logs\log.log -Wait -Tail 10

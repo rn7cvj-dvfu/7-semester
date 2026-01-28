@@ -1,6 +1,6 @@
 param(
     [switch]$Pull,
-    [switch]$Rebuild,
+    [switch]$Rebuild
 )
 
 $BuildDir = "build"
