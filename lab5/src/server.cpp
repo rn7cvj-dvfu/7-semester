@@ -1,3 +1,10 @@
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
+
 #include <iostream>
 #include <string>
 #include <thread>
@@ -12,10 +19,6 @@
 #include <date_time.hpp>
 #include <database.hpp>
 #include <http_server.hpp>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 // Глобальные переменные для остановки сервера
 std::atomic<bool> g_running(true);
