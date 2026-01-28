@@ -4,7 +4,7 @@
 
 namespace Threads
 {
-	// ==================== Mutex ====================
+
 	Mutex::Mutex() {
 		pthread_mutexattr_t attr;
 		pthread_mutexattr_init(&attr);
@@ -29,7 +29,6 @@ namespace Threads
 		return (pthread_mutex_trylock(&_mutex) == 0);
 	}
 
-	// ==================== AutoMutex ====================
 	AutoMutex::AutoMutex() :_local(true) {
 		_mutex = new rc_mutex();
 		pthread_mutex_init(_mutex, NULL);
@@ -49,7 +48,6 @@ namespace Threads
 			delete(_mutex);
 	}
 
-	// ==================== Barrier ====================
 	Barrier::Barrier(int value) :_value(value) {
 		_entered_barrier = 0;
 		_exited_barrier = 0;
@@ -100,7 +98,7 @@ namespace Threads
 		pthread_mutex_unlock(&_mutex);
 	}
 
-	// ==================== CondVar ====================
+
 	CondVar::CondVar() {
 		pthread_mutex_init(&_crtmutex, NULL);
 		pthread_cond_init(&_cond, NULL);
@@ -151,7 +149,6 @@ namespace Threads
 		return ret;
 	}
 
-	// ==================== Event ====================
 	Event::Event(int type) :_evt_type(type) {}
 
 	bool Event::IsUserEvent() {
@@ -162,7 +159,6 @@ namespace Threads
 		return _evt_type;
 	}
 
-	// ==================== Thread ====================
 	Thread::TermEx::TermEx(int code) :exit_code(code) {}
 
 	Thread::Thread() :_state(STATE_STOPPED), _barrier(2), _start_flag(FLAG_NOT_STARTED) {
@@ -390,4 +386,4 @@ namespace Threads
 		return THREAD_WRONG_SEQ;
 	}
 
-} // namespace cplib
+} 

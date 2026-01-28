@@ -13,10 +13,9 @@
 #include <iomanip>
 #include <date_time.hpp>
 
-
-const auto dayLifeTime = std::chrono::hours(24);
-const auto monthLifeTime = std::chrono::hours(24 * 30);
-const auto yearLifeTime = std::chrono::hours(24 * 365);
+const auto day_life_time = std::chrono::hours(24);
+const auto month_life_time = std::chrono::hours(24 * 30);
+const auto year_life_time = std::chrono::hours(24 * 365);
 
 
 /**
@@ -280,13 +279,13 @@ int main(int argc, char* argv[]) {
     }
 
     std::vector<LogEntry> all_log_entries = parseLogFile(all_log_file_name);
-    all_log_entries = filterByLiveTime(all_log_entries, dayLifeTime); 
+    all_log_entries = filterByLiveTime(all_log_entries, day_life_time); 
     
     std::vector<LogEntry> hour_log_entries = parseLogFile(mean_hour_log_file_name);
-    hour_log_entries = filterByLiveTime(hour_log_entries, monthLifeTime);
+    hour_log_entries = filterByLiveTime(hour_log_entries, month_life_time);
 
     std::vector<LogEntry> day_log_entries = parseLogFile(mean_day_log_file_name);
-    day_log_entries = filterByLiveTime(day_log_entries, yearLifeTime);
+    day_log_entries = filterByLiveTime(day_log_entries, year_life_time);
 
     while(true){
 
@@ -326,11 +325,9 @@ int main(int argc, char* argv[]) {
 
         saveLogFile(all_log_file_name, all_log_entries);
 
-        // Обновляем лог со средними значениями за час
         updateMeanHourLog(all_log_entries, hour_log_entries);
         saveLogFile(mean_hour_log_file_name, hour_log_entries);
 
-        // Обновляем лог со средними значениями за день
         updateMeanDayLog(hour_log_entries, day_log_entries);
         saveLogFile(mean_day_log_file_name, day_log_entries);
         

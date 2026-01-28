@@ -4,42 +4,36 @@
 namespace SharedMemory {
 
 SharedMemoryManager::SharedMemoryManager(const std::string& name)
-    : shmHandle_(INVALID_SHM_HANDLE)
-    , semHandle_(INVALID_SEM_HANDLE)
+    : shm_handle_(INVALID_SHM_HANDLE)
+    , sem_handle_(INVALID_SEM_HANDLE)
     , data_(nullptr)
     , name_(name)
-    , isCreator_(false)
+    , is_creator_(false)
 {
-    // Пытаемся открыть существующую память
     if (!openSharedMemory()) {
-        // Если не удалось, создаем новую
         if (createSharedMemory()) {
-            isCreator_ = true;
+            is_creator_ = true;
         }
     }
 
-    // Подключаем память
-    if (shmHandle_ != INVALID_SHM_HANDLE) {
+    if (shm_handle_ != INVALID_SHM_HANDLE) {
         mapSharedMemory();
     }
 
-    // Работаем с семафором
     if (!openSemaphore()) {
         createSemaphore();
     }
 
-    // Если все успешно и мы создатели, инициализируем данные
-    if (isValid() && isCreator_) {
+    if (isValid() && is_creator_) {
         data_->counter = 0;
-        data_->processCount = 0;
-        data_->isMasterActive = false;
-        data_->masterPid = 0;
+        data_->process_count = 0;
+        data_->is_master_active = false;
+        data_->master_pid = 0;
     }
 
-    // Регистрируем подключение процесса
     if (isValid()) {
         lock();
-        data_->processCount++;
+        data_->process_count++;
         unlock();
     }
 }
@@ -47,8 +41,8 @@ SharedMemoryManager::SharedMemoryManager(const std::string& name)
 SharedMemoryManager::~SharedMemoryManager() {
     if (isValid()) {
         lock();
-        data_->processCount--;
-        int count = data_->processCount;
+        data_->process_count--;
+        int count = data_->process_count;
         unlock();
 
         if (count <= 0) {
@@ -63,20 +57,20 @@ SharedMemoryManager::~SharedMemoryManager() {
 }
 
 bool SharedMemoryManager::isValid() const {
-    return shmHandle_ != INVALID_SHM_HANDLE && 
-           semHandle_ != INVALID_SEM_HANDLE && 
+    return shm_handle_ != INVALID_SHM_HANDLE && 
+           sem_handle_ != INVALID_SEM_HANDLE && 
            data_ != nullptr;
 }
 
 void SharedMemoryManager::lock() {
-    if (semHandle_ != INVALID_SEM_HANDLE) {
-        WaitForSingleObject(semHandle_, INFINITE);
+    if (sem_handle_ != INVALID_SEM_HANDLE) {
+        WaitForSingleObject(sem_handle_, INFINITE);
     }
 }
 
 void SharedMemoryManager::unlock() {
-    if (semHandle_ != INVALID_SEM_HANDLE) {
-        ReleaseSemaphore(semHandle_, 1, NULL);
+    if (sem_handle_ != INVALID_SEM_HANDLE) {
+        ReleaseSemaphore(sem_handle_, 1, NULL);
     }
 }
 
@@ -89,9 +83,9 @@ bool SharedMemoryManager::tryBecomeMaster(int64_t pid) {
     
     lock();
     bool result = false;
-    if (!data_->isMasterActive) {
-        data_->isMasterActive = true;
-        data_->masterPid = pid;
+    if (!data_->is_master_active) {
+        data_->is_master_active = true;
+        data_->master_pid = pid;
         result = true;
     }
     unlock();
@@ -103,46 +97,46 @@ void SharedMemoryManager::releaseMaster() {
     if (!isValid()) return;
     
     lock();
-    data_->isMasterActive = false;
-    data_->masterPid = 0;
+    data_->is_master_active = false;
+    data_->master_pid = 0;
     unlock();
 }
 
 bool SharedMemoryManager::isMaster(int64_t pid) const {
     if (!isValid()) return false;
-    return data_->isMasterActive && data_->masterPid == pid;
+    return data_->is_master_active && data_->master_pid == pid;
 }
 
 bool SharedMemoryManager::createSharedMemory() {
-    std::string mapName = "Local\\" + name_;
-    shmHandle_ = CreateFileMappingA(
+    std::string map_name = "Local\\" + name_;
+    shm_handle_ = CreateFileMappingA(
         INVALID_HANDLE_VALUE,
         NULL,
         PAGE_READWRITE,
         0,
         sizeof(SharedData),
-        mapName.c_str()
+        map_name.c_str()
     );
     
-    return shmHandle_ != INVALID_SHM_HANDLE;
+    return shm_handle_ != INVALID_SHM_HANDLE;
 }
 
 bool SharedMemoryManager::openSharedMemory() {
-    std::string mapName = "Local\\" + name_;
-    shmHandle_ = OpenFileMappingA(
+    std::string map_name = "Local\\" + name_;
+    shm_handle_ = OpenFileMappingA(
         FILE_MAP_ALL_ACCESS,
         FALSE,
-        mapName.c_str()
+        map_name.c_str()
     );
     
-    return shmHandle_ != INVALID_SHM_HANDLE;
+    return shm_handle_ != INVALID_SHM_HANDLE;
 }
 
 bool SharedMemoryManager::mapSharedMemory() {
-    if (shmHandle_ == INVALID_SHM_HANDLE) return false;
+    if (shm_handle_ == INVALID_SHM_HANDLE) return false;
     
     data_ = static_cast<SharedData*>(
-        MapViewOfFile(shmHandle_, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SharedData))
+        MapViewOfFile(shm_handle_, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SharedData))
     );
     
     return data_ != nullptr;
@@ -156,9 +150,9 @@ void SharedMemoryManager::unmapSharedMemory() {
 }
 
 void SharedMemoryManager::closeSharedMemory() {
-    if (shmHandle_ != INVALID_SHM_HANDLE) {
-        CloseHandle(shmHandle_);
-        shmHandle_ = INVALID_SHM_HANDLE;
+    if (shm_handle_ != INVALID_SHM_HANDLE) {
+        CloseHandle(shm_handle_);
+        shm_handle_ = INVALID_SHM_HANDLE;
     }
 }
 
@@ -168,32 +162,32 @@ void SharedMemoryManager::destroySharedMemory() {
 }
 
 bool SharedMemoryManager::createSemaphore() {
-    std::string semName = name_ + "_sem";
-    semHandle_ = CreateSemaphoreA(
+    std::string sem_name = name_ + "_sem";
+    sem_handle_ = CreateSemaphoreA(
         NULL,
-        1,  // Начальное значение
-        1,  // Максимальное значение
-        semName.c_str()
+        1,
+        1,
+        sem_name.c_str()
     );
     
-    return semHandle_ != INVALID_SEM_HANDLE;
+    return sem_handle_ != INVALID_SEM_HANDLE;
 }
 
 bool SharedMemoryManager::openSemaphore() {
-    std::string semName = name_ + "_sem";
-    semHandle_ = OpenSemaphoreA(
+    std::string sem_name = name_ + "_sem";
+    sem_handle_ = OpenSemaphoreA(
         SEMAPHORE_ALL_ACCESS,
         FALSE,
-        semName.c_str()
+        sem_name.c_str()
     );
     
-    return semHandle_ != INVALID_SEM_HANDLE;
+    return sem_handle_ != INVALID_SEM_HANDLE;
 }
 
 void SharedMemoryManager::closeSemaphore() {
-    if (semHandle_ != INVALID_SEM_HANDLE) {
-        CloseHandle(semHandle_);
-        semHandle_ = INVALID_SEM_HANDLE;
+    if (sem_handle_ != INVALID_SEM_HANDLE) {
+        CloseHandle(sem_handle_);
+        sem_handle_ = INVALID_SEM_HANDLE;
     }
 }
 
@@ -201,4 +195,5 @@ void SharedMemoryManager::destroySemaphore() {
     closeSemaphore();
 }
 
-} // namespace SharedMemory
+
+} 

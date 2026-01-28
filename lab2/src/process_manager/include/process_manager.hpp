@@ -2,9 +2,7 @@
 #include <vector>
 
 #ifdef _WIN32
-    #include <windows.h>
-#elif defined(__unix__)
-    #include <sys/types.h>
+#include <windows.h>
 #endif
 
 /**
@@ -26,7 +24,7 @@ namespace ProcessManager {
      */
     struct LaunchResult {
         bool success;          
-        ProcessHandle handle;   
+        ProcessManager::ProcessHandle handle;   
         std::string error;      
     };
 
@@ -38,7 +36,7 @@ namespace ProcessManager {
      */
     struct WaitResult {
         bool success;          
-        int exitCode;           
+        int exit_code;           
         std::string error;      
     };
 
@@ -68,24 +66,24 @@ namespace ProcessManager {
      * @brief Ожидает завершения процесса и получает код возврата
      * 
      * @param handle Дескриптор процесса
-     * @param timeoutMs Таймаут в миллисекундах (0 - бесконечно)
+     * @param timeout_ms Таймаут в миллисекундах (0 - бесконечно)
      * @return WaitResult Результат ожидания с кодом возврата
      */
     WaitResult waitForProcess(
-        ProcessHandle handle, 
-        unsigned int timeoutMs = 0
+        ProcessManager::ProcessHandle handle, 
+        unsigned int timeout_ms = 0
     );
 
     /**
      * @brief Ожидает закрытия окна терминала и получает код возврата
      * 
      * @param handle Дескриптор процесса терминала
-     * @param timeoutMs Таймаут в миллисекундах (0 - бесконечно)
+     * @param timeout_ms Таймаут в миллисекундах (0 - бесконечно)
      * @return WaitResult Результат ожидания с кодом возврата
      */
     WaitResult waitForTerminal(
-        ProcessHandle handle, 
-        unsigned int timeoutMs = 0
+        ProcessManager::ProcessHandle handle, 
+        unsigned int timeout_ms = 0
     );
 
     /**
@@ -95,7 +93,7 @@ namespace ProcessManager {
      * @return true Если процесс еще работает
      * @return false Если процесс завершился
      */
-    bool isProcessRunning(ProcessHandle handle);
+    bool isProcessRunning(ProcessManager::ProcessHandle handle);
 
     /**
      * @brief Принудительно завершает процесс
@@ -104,14 +102,14 @@ namespace ProcessManager {
      * @return true Если процесс был завершен успешно
      * @return false В случае ошибки
      */
-    bool terminateProcess(ProcessHandle handle);
+    bool terminateProcess(ProcessManager::ProcessHandle handle);
 
     /**
      * @brief Освобождает ресурсы дескриптора процесса
      * 
      * @param handle Дескриптор процесса
      */
-    void closeHandle(ProcessHandle handle);
+    void closeHandle(ProcessManager::ProcessHandle handle);
 
     /**
      * @brief Получает идентификатор текущего процесса
@@ -121,7 +119,6 @@ namespace ProcessManager {
     namespace internal {
         
 #ifdef _WIN32
-       
         std::wstring buildCommandLine(
             const std::string& command, 
             const std::vector<std::string>& args
@@ -130,7 +127,6 @@ namespace ProcessManager {
         std::wstring stringToWString(const std::string& str);
 
 #elif defined(__unix__)
-
         char** buildArgv(
             const std::string& command, 
             const std::vector<std::string>& args

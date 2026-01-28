@@ -2,7 +2,6 @@
 #include <windows.h>
 #include <sstream>
 
-
 namespace ProcessManager {
 
     LaunchResult launchProcess(
@@ -21,24 +20,24 @@ namespace ProcessManager {
         si.cb = sizeof(si);
         ZeroMemory(&pi, sizeof(pi));
         
-        std::wstring cmdLine = internal::buildCommandLine(command, args);
+        std::wstring cmd_line = internal::buildCommandLine(command, args);
 
-        std::vector<wchar_t> cmdLineBuffer(cmdLine.begin(), cmdLine.end());
-        cmdLineBuffer.push_back(L'\0');
+        std::vector<wchar_t> cmd_line_buffer(cmd_line.begin(), cmd_line.end());
+        cmd_line_buffer.push_back(L'\0');
         
-        DWORD creationFlags = silent ? CREATE_NO_WINDOW : CREATE_NEW_CONSOLE;
+        DWORD creation_flags = silent ? CREATE_NO_WINDOW : CREATE_NEW_CONSOLE;
 
         if (!CreateProcessW(
-                NULL,                   // Имя модуля (NULL = использовать командную строку)
-                cmdLineBuffer.data(),   // Командная строка
-                NULL,                   // Атрибуты безопасности процесса
-                NULL,                   // Атрибуты безопасности потока
-                FALSE,                  // Наследование дескрипторов
-                creationFlags,          // Флаги создания
-                NULL,                   // Окружение
-                NULL,                   // Текущая директория
-                &si,                    // Информация о запуске
-                &pi                     // Информация о процессе
+                NULL,
+                cmd_line_buffer.data(),
+                NULL,
+                NULL,
+                FALSE,
+                creation_flags,
+                NULL,
+                NULL,
+                &si,
+                &pi
             )) {
             DWORD error = GetLastError();
             result.error = "Failed to create process. Error code: " + std::to_string(error);
@@ -65,27 +64,26 @@ namespace ProcessManager {
         si.cb = sizeof(si);
         ZeroMemory(&pi, sizeof(pi));
         
-        // Для cmd.exe строим командную строку вручную без кавычек вокруг команды
-        std::wstring cmdLine = L"cmd.exe";
+        std::wstring cmd_line = L"cmd.exe";
         
         for (const auto& arg : args) {
-            cmdLine += L" " + internal::stringToWString(arg);
+            cmd_line += L" " + internal::stringToWString(arg);
         }
         
-        std::vector<wchar_t> cmdLineBuffer(cmdLine.begin(), cmdLine.end());
-        cmdLineBuffer.push_back(L'\0');
+        std::vector<wchar_t> cmd_line_buffer(cmd_line.begin(), cmd_line.end());
+        cmd_line_buffer.push_back(L'\0');
         
         if (!CreateProcessW(
-                NULL,                   // Имя модуля
-                cmdLineBuffer.data(),   // Командная строка
-                NULL,                   // Атрибуты безопасности процесса
-                NULL,                   // Атрибуты безопасности потока
-                FALSE,                  // Наследование дескрипторов
-                CREATE_NEW_CONSOLE,     // Флаги создания (новая консоль)
-                NULL,                   // Окружение
-                NULL,                   // Текущая директория
-                &si,                    // Информация о запуске
-                &pi                     // Информация о процессе
+                NULL,
+                cmd_line_buffer.data(),
+                NULL,
+                NULL,
+                FALSE,
+                CREATE_NEW_CONSOLE,
+                NULL,
+                NULL,
+                &si,
+                &pi
             )) {
             DWORD error = GetLastError();
             result.error = "Failed to create terminal process. Error code: " + std::to_string(error);
@@ -101,64 +99,64 @@ namespace ProcessManager {
     }
 
     WaitResult waitForProcess(
-        ProcessHandle handle, 
-        unsigned int timeoutMs
+        ProcessManager::ProcessHandle handle, 
+        unsigned int timeout_ms
     ) {
         WaitResult result;
         result.success = false;
-        result.exitCode = -1;
+        result.exit_code = -1;
         
         if (handle == NULL) {
             result.error = "Invalid process handle";
             return result;
         }
         
-        DWORD timeout = (timeoutMs == 0) ? INFINITE : timeoutMs;
-        DWORD waitResult = WaitForSingleObject(handle, timeout);
+        DWORD timeout = (timeout_ms == 0) ? INFINITE : timeout_ms;
+        DWORD wait_result = WaitForSingleObject(handle, timeout);
         
-        if (waitResult == WAIT_TIMEOUT) {
+        if (wait_result == WAIT_TIMEOUT) {
             result.error = "Wait timeout expired";
             return result;
         }
         
-        if (waitResult != WAIT_OBJECT_0) {
+        if (wait_result != WAIT_OBJECT_0) {
             result.error = "Wait failed. Error code: " + std::to_string(GetLastError());
             return result;
         }
         
-        DWORD exitCode;
-        if (!GetExitCodeProcess(handle, &exitCode)) {
+        DWORD exit_code;
+        if (!GetExitCodeProcess(handle, &exit_code)) {
             result.error = "Failed to get exit code. Error code: " + std::to_string(GetLastError());
             return result;
         }
         
         result.success = true;
-        result.exitCode = static_cast<int>(exitCode);
+        result.exit_code = static_cast<int>(exit_code);
         
         return result;
     }
 
-    WaitResult waitForTerminal(ProcessHandle handle, unsigned int timeoutMs) {
-        return waitForProcess(handle, timeoutMs);
+    WaitResult waitForTerminal(ProcessManager::ProcessHandle handle, unsigned int timeout_ms) {
+        return waitForProcess(handle, timeout_ms);
     }
 
-    bool isProcessRunning(ProcessHandle handle) {
+    bool isProcessRunning(ProcessManager::ProcessHandle handle) {
         if (handle == NULL) return false;
         
-        DWORD exitCode;
-        if (!GetExitCodeProcess(handle, &exitCode)) {
+        DWORD exit_code;
+        if (!GetExitCodeProcess(handle, &exit_code)) {
             return false;
         }
         
-        return exitCode == STILL_ACTIVE;
+        return exit_code == STILL_ACTIVE;
     }
 
-    bool terminateProcess(ProcessHandle handle) {
+    bool terminateProcess(ProcessManager::ProcessHandle handle) {
         if (handle == NULL) return false;
         return TerminateProcess(handle, 1) != 0;
     }
 
-    void closeHandle(ProcessHandle handle) {
+    void closeHandle(ProcessManager::ProcessHandle handle) {
         if (handle != NULL) {
             CloseHandle(handle);
         }
@@ -173,8 +171,7 @@ namespace ProcessManager {
         result.success = false;
         result.handle = NULL;
         
-        // На Windows используем cmd.exe
-        std::string fullCmd = std::string("cmd.exe /K ") + command;
+        std::string full_cmd = std::string("cmd.exe /K ") + command;
         std::vector<std::string> args;
         
         return launchProcess("cmd.exe", { "/K", command });
@@ -186,22 +183,22 @@ namespace ProcessManager {
             if (str.empty()) return std::wstring();
             
             int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
-            std::wstring wstrTo(size_needed, 0);
-            MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &wstrTo[0], size_needed);
-            return wstrTo;
+            std::wstring wstr_to(size_needed, 0);
+            MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &wstr_to[0], size_needed);
+            return wstr_to;
         }
 
         std::wstring buildCommandLine(
             const std::string& command, 
             const std::vector<std::string>& args
         ) {
-            std::wstring cmdLine = L"\"" + stringToWString(command) + L"\"";
+            std::wstring cmd_line = L"\"" + stringToWString(command) + L"\"";
             
             for (const auto& arg : args) {
-                cmdLine += L" \"" + stringToWString(arg) + L"\"";
+                cmd_line += L" \"" + stringToWString(arg) + L"\"";
             }
             
-            return cmdLine;
+            return cmd_line;
         }
 
     } 

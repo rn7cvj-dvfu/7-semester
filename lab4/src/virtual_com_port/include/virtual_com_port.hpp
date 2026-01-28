@@ -3,13 +3,9 @@
 #include <memory>
 
 #ifdef _WIN32
-    #include <windows.h>
+#include <windows.h>
 #elif defined(__unix__)
-    #include <termios.h>
-    #include <fcntl.h>
-    #include <unistd.h>
-    #include <pty.h>
-    #include <sys/select.h>
+#include <termios.h>
 #endif
 
 namespace VirtualCOM {
@@ -35,11 +31,11 @@ namespace VirtualCOM {
         
         /**
          * @brief Конструктор с автоматическим открытием существующего порта
-         * @param portName Имя порта
-         * @param baudRate Скорость передачи данных
+         * @param port_name Имя порта
+         * @param baud_rate Скорость передачи данных
          * @throw std::runtime_error если не удалось открыть порт
          */
-        VirtualComPort(const std::string& portName, int baudRate = 9600);
+        VirtualComPort(const std::string& port_name, int baud_rate = 9600);
         
         /**
          * @brief Запись данных в порт
@@ -50,11 +46,11 @@ namespace VirtualCOM {
 
         /**
          * @brief Чтение данных из порта
-         * @param maxBytes Максимальное количество байт для чтения
-         * @param timeoutMs Таймаут в миллисекундах
+         * @param max_bytes Максимальное количество байт для чтения
+         * @param timeout_ms Таймаут в миллисекундах
          * @return Прочитанные данные
          */
-        std::string read(size_t maxBytes = 1024, int timeoutMs = 1000);
+        std::string read(size_t max_bytes = 1024, int timeout_ms = 1000);
 
         /**
          * @brief Проверка, открыт ли порт
@@ -72,14 +68,14 @@ namespace VirtualCOM {
     private:
 #ifdef _WIN32
         HANDLE handle_;
-        std::string portName_;
+        std::string port_name_;
 #elif defined(__unix__)
         int fd_;
-        std::string portName_;
-        struct termios oldTermios_;
+        std::string port_name_;
+        struct termios old_termios_;
 #endif
-        bool isOpen_;
-        int baudRate_;
+        bool is_open_;
+        int baud_rate_;
 
         bool configurePort();
         

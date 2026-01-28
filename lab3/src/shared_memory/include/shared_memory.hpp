@@ -31,10 +31,10 @@ namespace SharedMemory {
      * @brief Структура данных в разделяемой памяти
      */
     struct SharedData {
-        int64_t counter;           // Счетчик
-        int processCount;          // Количество подключенных процессов
-        bool isMasterActive;       // Флаг активности мастер-процесса
-        int64_t masterPid;         // PID мастер-процесса
+        int64_t counter;
+        int process_count;
+        bool is_master_active;
+        int64_t master_pid;
     };
 
     /**
@@ -48,7 +48,6 @@ namespace SharedMemory {
     /**
      * @brief Класс для работы с разделяемой памятью
      */
-    // template <class T>
     class SharedMemoryManager {
     public:
         /**
@@ -99,11 +98,11 @@ namespace SharedMemory {
         bool isMaster(int64_t pid) const;
 
     private:
-        ShmHandle shmHandle_;
-        SemHandle semHandle_;
+        ShmHandle shm_handle_;
+        SemHandle sem_handle_;
         SharedData* data_;
         std::string name_;
-        bool isCreator_;
+        bool is_creator_;
 
         bool createSharedMemory();
         bool openSharedMemory();

@@ -13,40 +13,37 @@ using namespace SharedMemory;
 using namespace Threads;
 using namespace Time;
 
-std::string g_shmName = "lab3_counter";
-std::string g_logFileName = "./logs/log.log";
+std::string g_shm_name = "lab3_counter";
+std::string g_log_file_name = "./logs/log.log";
 
 int main(int argc, char* argv[]) {
-
         
-    SharedMemoryManager sharedMem(g_shmName);
+    SharedMemoryManager shared_mem(g_shm_name);
 
-    if (!sharedMem.isValid()) {
+    if (!shared_mem.isValid()) {
         std::cerr << "Error initializing shared memory." << std::endl;
         return 1;
     }
-    
 
     int pid = ProcessManager::getProcessID();
-    std::string timeStart = Time::GetCurrentTimeString();
+    std::string time_start = Time::getCurrentTimeString();
 
-    std::ofstream log = std::ofstream(g_logFileName, std::ios::app);
+    std::ofstream log = std::ofstream(g_log_file_name, std::ios::app);
 
- 
     if (!log.is_open()){
         std::cerr <<"ERROR: Failed to open log file" << std::endl;
         return 1;
     }
 
-    log << "[" << timeStart << "]\tMultiply started\t\t| PID: " << pid << std::endl;
+    log << "[" << time_start << "]\tMultiply started\t\t| PID: " << pid << std::endl;
     log.flush();
 
-    sharedMem.lock();
-    sharedMem.getData()->counter *= 2;
-    sharedMem.unlock();
+    shared_mem.lock();
+    shared_mem.getData()->counter *= 2;
+    shared_mem.unlock();
     
-    std::string timeEnd = Time::GetCurrentTimeString();
-    log << "[" << timeEnd << "]\tMultiply finished\t\t| PID: " << pid << std::endl;
+    std::string time_end = Time::getCurrentTimeString();
+    log << "[" << time_end << "]\tMultiply finished\t\t| PID: " << pid << std::endl;
     log.flush();
     log.close();
 

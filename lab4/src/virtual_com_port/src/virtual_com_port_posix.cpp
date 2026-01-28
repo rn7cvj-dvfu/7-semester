@@ -1,11 +1,15 @@
-#if defined(__unix__) || defined(__APPLE__)
 
-#include "../include/virtual_com_port.hpp"
+#include "virtual_com_port.hpp"
 #include <iostream>
 #include <cstring>
 #include <stdexcept>
 #include <sys/ioctl.h>
 #include <errno.h>
+#include <termios.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <pty.h>
+#include <sys/select.h>
 
 namespace VirtualCOM {
 
@@ -153,6 +157,5 @@ bool VirtualComPort::configureUnixPort() {
     return true;
 }
 
-} // namespace VirtualCOM
+}
 
-#endif // __unix__ || __APPLE__

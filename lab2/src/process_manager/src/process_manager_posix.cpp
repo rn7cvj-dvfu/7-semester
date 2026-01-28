@@ -26,7 +26,6 @@ namespace ProcessManager {
         }
 
         if (pid == 0){
-
             char** argv = internal::buildArgv(command, args);
 
             execvp(command.c_str(), argv);
@@ -58,63 +57,61 @@ namespace ProcessManager {
             nullptr
         };
         
-        std::string terminalCmd;
+        std::string terminal_cmd;
         
         for (int i = 0; terminals[i] != nullptr; ++i) {
+            std::string check_cmd = std::string("which ") + terminals[i] + " > /dev/null 2>&1";
         
-            std::string checkCmd = std::string("which ") + terminals[i] + " > /dev/null 2>&1";
-        
-            if (system(checkCmd.c_str()) == 0) {
-                terminalCmd = terminals[i];
+            if (system(check_cmd.c_str()) == 0) {
+                terminal_cmd = terminals[i];
                 break;
             }
         }
         
-        if (terminalCmd.empty()) {
+        if (terminal_cmd.empty()) {
             result.error = "No terminal emulator found";
             return result;
         }
         
-        std::vector<std::string> processArgs;
+        std::vector<std::string> process_args;
         
-        if (terminalCmd == "xterm") {
-            processArgs = { "-e", "bash", "-c" };
-        } else if (terminalCmd == "gnome-terminal") {
-            processArgs = { "--wait", "--", "bash", "-c" };
-        } else if (terminalCmd == "konsole") {
-            processArgs = { "-e", "bash", "-c" };
-        } else if (terminalCmd == "xfce4-terminal") {
-            processArgs = { "-e", "bash", "-c" };
-        } else if (terminalCmd == "mate-terminal") {
-            processArgs = { "-e", "bash", "-c" };
+        if (terminal_cmd == "xterm") {
+            process_args = { "-e", "bash", "-c" };
+        } else if (terminal_cmd == "gnome-terminal") {
+            process_args = { "--wait", "--", "bash", "-c" };
+        } else if (terminal_cmd == "konsole") {
+            process_args = { "-e", "bash", "-c" };
+        } else if (terminal_cmd == "xfce4-terminal") {
+            process_args = { "-e", "bash", "-c" };
+        } else if (terminal_cmd == "mate-terminal") {
+            process_args = { "-e", "bash", "-c" };
         } else {
-            processArgs = { "-e", "bash", "-c" };
+            process_args = { "-e", "bash", "-c" };
         }
         
-         
-        processArgs.insert(processArgs.end(), args.begin(), args.end());    
+        process_args.insert(process_args.end(), args.begin(), args.end());    
         
-        return launchProcess(terminalCmd, processArgs);
+        return launchProcess(terminal_cmd, process_args);
     }
 
     WaitResult waitForProcess(
         ProcessHandle handle, 
-        unsigned int timeoutMs
+        unsigned int timeout_ms
     ) {
         WaitResult result;
         result.success = false;
-        result.exitCode = -1;
+        result.exit_code = -1;
 
         int status;
-        pid_t waitResult = waitpid(handle, &status, 0);
+        pid_t wait_result = waitpid(handle, &status, 0);
         
-        if (waitResult == -1) {
+        if (wait_result == -1) {
             result.error = "waitpid failed: " + std::string(std::strerror(errno));
             return result;
         }
 
         if (WIFEXITED(status)) {
-            result.exitCode = WEXITSTATUS(status);
+            result.exit_code = WEXITSTATUS(status);
             result.success = true;
         } else {
             result.error = "Process did not terminate normally";
@@ -123,13 +120,12 @@ namespace ProcessManager {
         return result;
     }
 
-   WaitResult waitForTerminal(ProcessHandle handle, unsigned int timeoutMs) {
-        return waitForProcess(handle, timeoutMs);
+   WaitResult waitForTerminal(ProcessManager::ProcessHandle handle, unsigned int timeout_ms) {
+        return waitForProcess(handle, timeout_ms);
     }
 
-    bool isProcessRunning(ProcessHandle handle) {
+    bool isProcessRunning(ProcessManager::ProcessHandle handle) {
         if (handle <= 0) return false;
-        
 
         int result = kill(handle, 0);
         
@@ -144,7 +140,7 @@ namespace ProcessManager {
         return true;
     }
 
-    bool terminateProcess(ProcessHandle handle) {
+    bool terminateProcess(ProcessManager::ProcessHandle handle) {
         if (handle <= 0) return false;
         
         if (kill(handle, SIGTERM) == 0) {
@@ -154,8 +150,7 @@ namespace ProcessManager {
         return false;
     }
 
-    void closeHandle(ProcessHandle handle) {
-    
+    void closeHandle(ProcessManager::ProcessHandle handle) {
         (void)handle;
     }
 

@@ -1,28 +1,28 @@
-#ifdef _WIN32
 
-#include "../include/virtual_com_port.hpp"
+
+#include "virtual_com_port.hpp"
 #include <iostream>
 #include <stdexcept>
+#include <windows.h>
 
 namespace VirtualCOM {
 
 VirtualComPort::VirtualComPort() 
     : handle_(INVALID_HANDLE_VALUE)
-    , isOpen_(false)
-    , baudRate_(9600) {
+    , is_open_(false)
+    , baud_rate_(9600) {
 }
 
-VirtualComPort::VirtualComPort(const std::string& portName, int baudRate) 
+VirtualComPort::VirtualComPort(const std::string& port_name, int baud_rate) 
     : handle_(INVALID_HANDLE_VALUE)
-    , isOpen_(false)
-    , baudRate_(baudRate)
-    , portName_(portName) {
+    , is_open_(false)
+    , baud_rate_(baud_rate)
+    , port_name_(port_name) {
     
-    // Добавляем префикс \\..\ для Windows API
-    std::string fullPortName = "\\\\.\\"+portName;
+    std::string full_port_name = "\\\\.\\"+port_name;
 
     handle_ = CreateFileA(
-        fullPortName.c_str(),
+        full_port_name.c_str(),
         GENERIC_READ | GENERIC_WRITE,
         0,
         NULL,
@@ -33,16 +33,16 @@ VirtualComPort::VirtualComPort(const std::string& portName, int baudRate)
 
     if (handle_ == INVALID_HANDLE_VALUE) {
         DWORD error = GetLastError();
-        throw std::runtime_error("Failed to open COM port " + portName + ". Error: " + std::to_string(error));
+        throw std::runtime_error("Failed to open COM port " + port_name + ". Error: " + std::to_string(error));
     }
 
     if (!configureWindowsPort()) {
         CloseHandle(handle_);
         handle_ = INVALID_HANDLE_VALUE;
-        throw std::runtime_error("Failed to configure COM port " + portName);
+        throw std::runtime_error("Failed to configure COM port " + port_name);
     }
 
-    isOpen_ = true;
+    is_open_ = true;
 }
 
 VirtualComPort::~VirtualComPort() {
@@ -50,28 +50,28 @@ VirtualComPort::~VirtualComPort() {
 }
 
 void VirtualComPort::close() {
-    if (isOpen_ && handle_ != INVALID_HANDLE_VALUE) {
+    if (is_open_ && handle_ != INVALID_HANDLE_VALUE) {
         CloseHandle(handle_);
         handle_ = INVALID_HANDLE_VALUE;
-        isOpen_ = false;
+        is_open_ = false;
     }
 }
 
 bool VirtualComPort::isOpen() const {
-    return isOpen_;
+    return is_open_;
 }
 
 int VirtualComPort::write(const std::string& data) {
-    if (!isOpen_) {
+    if (!is_open_) {
         return -1;
     }
 
-    DWORD bytesWritten = 0;
+    DWORD bytes_written = 0;
     BOOL success = WriteFile(
         handle_,
         data.c_str(),
         static_cast<DWORD>(data.size()),
-        &bytesWritten,
+        &bytes_written,
         NULL
     );
 
@@ -79,38 +79,37 @@ int VirtualComPort::write(const std::string& data) {
         return -1;
     }
 
-    return static_cast<int>(bytesWritten);
+    return static_cast<int>(bytes_written);
 }
 
-std::string VirtualComPort::read(size_t maxBytes, int timeoutMs) {
-    if (!isOpen_) {
+std::string VirtualComPort::read(size_t max_bytes, int timeout_ms) {
+    if (!is_open_) {
         return "";
     }
 
-    // Установка таймаута
     COMMTIMEOUTS timeouts = {0};
-    timeouts.ReadIntervalTimeout = timeoutMs;
-    timeouts.ReadTotalTimeoutConstant = timeoutMs;
+    timeouts.ReadIntervalTimeout = timeout_ms;
+    timeouts.ReadTotalTimeoutConstant = timeout_ms;
     timeouts.ReadTotalTimeoutMultiplier = 0;
     SetCommTimeouts(handle_, &timeouts);
 
     std::string buffer;
-    buffer.resize(maxBytes);
+    buffer.resize(max_bytes);
     
-    DWORD bytesRead = 0;
+    DWORD bytes_read = 0;
     BOOL success = ReadFile(
         handle_,
         &buffer[0],
-        static_cast<DWORD>(maxBytes),
-        &bytesRead,
+        static_cast<DWORD>(max_bytes),
+        &bytes_read,
         NULL
     );
 
-    if (!success || bytesRead == 0) {
+    if (!success || bytes_read == 0) {
         return "";
     }
 
-    buffer.resize(bytesRead);
+    buffer.resize(bytes_read);
     return buffer;
 }
 
@@ -126,7 +125,7 @@ bool VirtualComPort::configureWindowsPort() {
         return false;
     }
 
-    dcb.BaudRate = baudRate_;
+    dcb.BaudRate = baud_rate_;
     dcb.ByteSize = 8;
     dcb.StopBits = ONESTOPBIT;
     dcb.Parity = NOPARITY;
@@ -137,12 +136,9 @@ bool VirtualComPort::configureWindowsPort() {
         return false;
     }
 
-    // Очистка буферов
     PurgeComm(handle_, PURGE_RXCLEAR | PURGE_TXCLEAR);
 
     return true;
 }
 
-} // namespace VirtualCOM
-
-#endif // _WIN32
+}
