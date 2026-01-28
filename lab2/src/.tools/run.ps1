@@ -1,14 +1,14 @@
 param(
     [switch]$Pull,
     [switch]$Rebuild,
-    [string[]]$Args = @("lab3_counter", "./logs/log.log", "increment_counter.exe", "multiply_counter.exe")
 )
 
 $BuildDir = "build"
-$ExeName  = "lab3.exe"
+$ExeName  = "lab2.exe"
 
 # 1. Обновление репозитория
 if ($Pull) {
+
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         Write-Error "Git не установлен или не в PATH"
         exit 1
@@ -65,7 +65,7 @@ Set-Location $BuildDir
 $ExePath = Join-Path (Get-Location) $ExeName
 
 if (-not (Test-Path $ExePath)) {
-    Write-Error "Файл $ExeName не найден в $BuildDir"
+    Write-Error "Файл $ExeName не найден"
     Set-Location ..
     exit 1
 }
