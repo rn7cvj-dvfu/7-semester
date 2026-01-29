@@ -43,11 +43,11 @@ done
 
 # Значения по умолчанию если не указаны
 if [ ${#SENSOR_ARGS[@]} -eq 0 ]; then
-    SENSOR_ARGS=("/dev/pts/3" "0" "100" "1000" "100")
+    SENSOR_ARGS=("/tmp/vcom_sensor" "0" "100" "1000" "100")
 fi
 
 if [ ${#LOGGER_ARGS[@]} -eq 0 ]; then
-    LOGGER_ARGS=("/dev/pts/3" "./logs/all.log" "./logs/hour.log" "./logs/day.log")
+    LOGGER_ARGS=("/tmp/vcom_logger" "./logs/all.log" "./logs/hour.log" "./logs/day.log")
 fi
 
 # 1. Обновление репозитория
@@ -122,6 +122,17 @@ cd "$BUILD_DIR"
 
 # 4. Запуск
 echo "== Запуск приложений =="
+
+# Проверяем наличие виртуальных COM портов
+if [ ! -e "${SENSOR_ARGS[0]}" ] || [ ! -e "${LOGGER_ARGS[0]}" ]; then
+    echo "Warning: Виртуальные COM порты не найдены!"
+    echo "Создайте их в отдельном терминале:"
+    echo "  ./.tools/setup_vcom.sh"
+    echo ""
+    echo "Или используйте реальные COM порты:"
+    echo "  $0 --sensor-args /dev/ttyUSB0 0 100 1000 100 --logger-args /dev/ttyUSB1 ./logs/all.log ./logs/hour.log ./logs/day.log"
+    exit 1
+fi
 
 if [ ! -f "./$SENSOR_EXE" ]; then
     echo "Error: Файл $SENSOR_EXE не найден"
