@@ -159,7 +159,7 @@ target_include_directories(server PRIVATE
 target_link_libraries(server date_time database http_server threads ${SQLITE3_LIBRARIES})
 
 if(UNIX)
-    target_link_libraries(server util)
+    target_link_libraries(server util dl)
 endif()
 
 # Копирование веб-файлов
