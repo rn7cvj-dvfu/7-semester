@@ -46,6 +46,34 @@ else()
     endif()
 endif()
 
+# Создаем библиотеку для работы с потоками (из lab3)
+set(THREADS_SOURCES "")
+
+if(WIN32)
+    set(THREADS_SOURCES
+        ../../lab3/src/threads/src/threads_win.cpp
+    )
+elseif(UNIX)
+    set(THREADS_SOURCES
+        ../../lab3/src/threads/src/threads_posix.cpp
+    )
+else()
+    message(FATAL_ERROR "Unsupported platform")
+endif()
+
+add_library(threads STATIC
+    ${THREADS_SOURCES}
+    ../../lab3/src/threads/include/threads.hpp
+)
+
+target_include_directories(threads PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lab3/src/threads/include
+)
+
+if(UNIX)
+    target_link_libraries(threads PRIVATE pthread)
+endif()
+
 # Библиотека DateTime (из lab4)
 add_library(date_time 
     ../../lab4/src/date_time/src/date_time.cpp
@@ -111,7 +139,7 @@ target_include_directories(sensor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../lab4/src/date_time/include
 )
 
-target_link_libraries(sensor date_time)
+target_link_libraries(sensor date_time threads)
 
 if(UNIX)
     target_link_libraries(sensor util)
@@ -128,7 +156,7 @@ target_include_directories(server PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/http_server/include
 )
 
-target_link_libraries(server date_time database http_server ${SQLITE3_LIBRARIES})
+target_link_libraries(server date_time database http_server threads ${SQLITE3_LIBRARIES})
 
 if(UNIX)
     target_link_libraries(server util)

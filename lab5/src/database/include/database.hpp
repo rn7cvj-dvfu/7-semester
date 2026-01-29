@@ -6,6 +6,9 @@
 #include <date_time.hpp>
 #include <sqlite3.h>
 
+namespace Database
+{
+
 /**
  * @brief Структура для хранения записи измерения
  */
@@ -123,3 +126,5 @@ private:
 
     bool executeSQL(const std::string &sql);
 };
+
+} // namespace Database

@@ -7,28 +7,24 @@
 
 #include <iostream>
 #include <string>
-#include <thread>
-#include <chrono>
 #include <sstream>
 #include <fstream>
 #include <filesystem>
-#include <atomic>
 #include <csignal>
+#include <ctime>
 
 #include <virtual_com_port.hpp>
 #include <date_time.hpp>
 #include <database.hpp>
 #include <http_server.hpp>
+#include <threads.hpp>
 
-// Глобальные переменные для остановки сервера
-std::atomic<bool> g_running(true);
-Database *g_database = nullptr;
+using namespace Threads;
+namespace DB = Database;
+namespace HS = HttpServer;
 
-void signalHandler(int signal)
-{
-    std::cout << "\nReceived signal " << signal << ", shutting down..." << std::endl;
-    g_running = false;
-}
+// Глобальные переменные для HTTP обработчиков
+DB::Database *g_database = nullptr;
 
 /**
  * @brief Парсинг query string параметров
@@ -56,7 +52,7 @@ std::map<std::string, std::string> parseQueryString(const std::string &query)
 /**
  * @brief Преобразование AggregatedData в JSON
  */
-std::string aggregatedDataToJson(const std::vector<AggregatedData> &data)
+std::string aggregatedDataToJson(const std::vector<DB::AggregatedData> &data)
 {
     std::ostringstream oss;
     oss << "[";
@@ -80,7 +76,7 @@ std::string aggregatedDataToJson(const std::vector<AggregatedData> &data)
 /**
  * @brief Преобразование Measurement в JSON
  */
-std::string measurementsToJson(const std::vector<Measurement> &measurements)
+std::string measurementsToJson(const std::vector<DB::Measurement> &measurements)
 {
     std::ostringstream oss;
     oss << "[";
@@ -103,9 +99,9 @@ std::string measurementsToJson(const std::vector<Measurement> &measurements)
 /**
  * @brief Обработчик для получения текущей температуры
  */
-void handleCurrentTemperature(const HttpRequest &request, HttpResponse &response)
+void handleCurrentTemperature(const HS::HttpRequest &request, HS::HttpResponse &response)
 {
-    Measurement last_measurement(DateTime(), 0);
+    DB::Measurement last_measurement(DateTime(), 0);
 
     if (g_database->getLastMeasurement(last_measurement))
     {
@@ -128,7 +124,7 @@ void handleCurrentTemperature(const HttpRequest &request, HttpResponse &response
 /**
  * @brief Обработчик для получения статистики
  */
-void handleStatistics(const HttpRequest &request, HttpResponse &response)
+void handleStatistics(const HS::HttpRequest &request, HS::HttpResponse &response)
 {
     auto params = parseQueryString(request.query_string);
 
@@ -191,7 +187,7 @@ void handleStatistics(const HttpRequest &request, HttpResponse &response)
 /**
  * @brief Обработчик для главной страницы (отдает HTML файл)
  */
-void handleIndex(const HttpRequest &request, HttpResponse &response)
+void handleIndex(const HS::HttpRequest &request, HS::HttpResponse &response)
 {
     std::ifstream file("web/index.html");
 
@@ -211,96 +207,143 @@ void handleIndex(const HttpRequest &request, HttpResponse &response)
 /**
  * @brief Поток чтения данных с COM порта
  */
-void sensorReaderThread(VirtualCOM::VirtualComPort &com_port, Database &db)
+class SensorReaderThread : public Thread
 {
-    while (g_running)
+public:
+    SensorReaderThread(VirtualCOM::VirtualComPort &port, DB::Database &database)
+        : _com_port(port), _db(database)
     {
-        std::string data = com_port.read();
+    }
 
-        if (data.empty())
+protected:
+    int MainStart() override
+    {
+        std::cout << "[SENSOR] Sensor reader thread started" << std::endl;
+        return 0;
+    }
+
+    void Main() override
+    {
+        while (true)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            continue;
-        }
+            std::string data = _com_port.read();
 
-        std::istringstream ss(data);
-        std::string token;
-
-        while (std::getline(ss, token, '\n'))
-        {
-            try
+            if (data.empty())
             {
-                size_t delimiter_pos = token.find('|');
-                if (delimiter_pos == std::string::npos)
+                Thread::Sleep(0.1);  // 100 ms
+                continue;
+            }
+
+            std::istringstream ss(data);
+            std::string token;
+
+            while (std::getline(ss, token, '\n'))
+            {
+                try
                 {
-                    continue;
+                    size_t delimiter_pos = token.find('|');
+                    if (delimiter_pos == std::string::npos)
+                    {
+                        continue;
+                    }
+
+                    std::string value_part = token.substr(0, delimiter_pos);
+                    std::string time_part = token.substr(delimiter_pos + 1);
+
+                    int temperature = std::stoi(value_part);
+                    std::time_t timestamp = static_cast<std::time_t>(std::stoll(time_part));
+
+                    DB::Measurement measurement(DateTime(timestamp), temperature);
+
+                    if (_db.addMeasurement(measurement))
+                    {
+                        std::cout << "[SENSOR] Temperature recorded: " << temperature 
+                                  << "°C at " << measurement.timestamp.toString() << std::endl;
+                    }
                 }
-
-                std::string value_part = token.substr(0, delimiter_pos);
-                std::string time_part = token.substr(delimiter_pos + 1);
-
-                int temperature = std::stoi(value_part);
-                std::time_t timestamp = static_cast<std::time_t>(std::stoll(time_part));
-
-                Measurement measurement(DateTime(timestamp), temperature);
-
-                if (db.addMeasurement(measurement))
+                catch (const std::exception &e)
                 {
-                    std::cout << "Saved: " << measurement.timestamp.toString()
-                              << " | " << measurement.temperature << "°C" << std::endl;
+                    std::cerr << "[SENSOR] Parse error: " << e.what() << std::endl;
                 }
             }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Error parsing sensor data: " << e.what() << std::endl;
-            }
+            CancelPoint();
         }
     }
-}
+
+    void MainQuit() override
+    {
+        std::cout << "[SENSOR] Sensor reader thread stopped" << std::endl;
+    }
+
+private:
+    VirtualCOM::VirtualComPort &_com_port;
+    DB::Database &_db;
+};
 
 /**
  * @brief Поток очистки старых данных
  */
-void cleanupThread(Database &db)
+class CleanupThread : public Thread
 {
-    while (g_running)
+public:
+    CleanupThread(DB::Database &database) : _db(database) {}
+
+protected:
+    int MainStart() override
     {
-        // Спим 1 час
-        for (int i = 0; i < 3600 && g_running; ++i)
+        std::cout << "[CLEANUP] Cleanup thread started (runs every hour)" << std::endl;
+        return 0;
+    }
+
+    void Main() override
+    {
+        const int SLEEP_INTERVAL = 3600;  // 1 hour in seconds
+        int sleep_counter = 0;
+
+        while (true)
         {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
+            // Спим 1 час с проверкой каждую секунду
+            sleep_counter = 0;
+            while (sleep_counter < SLEEP_INTERVAL)
+            {
+                Thread::Sleep(1.0);
+                sleep_counter++;
+            }
 
-        if (!g_running)
-            break;
+            // Удаляем данные старше 30 дней
+            DateTime cutoff_time(std::time(nullptr) - (30 * 86400));
+            int deleted = _db.cleanOldData(cutoff_time);
 
-        // Удаляем данные старше 30 дней
-        DateTime cutoff_time(std::time(nullptr) - (30 * 86400));
-        int deleted = db.cleanOldData(cutoff_time);
+            if (deleted > 0)
+            {
+                std::cout << "[CLEANUP] Removed " << deleted << " old measurements" << std::endl;
+            }
 
-        if (deleted > 0)
-        {
-            std::cout << "Cleaned " << deleted << " old measurements" << std::endl;
+            CancelPoint();
         }
     }
-}
+
+    void MainQuit() override
+    {
+        std::cout << "[CLEANUP] Cleanup thread stopped" << std::endl;
+    }
+
+private:
+    DB::Database &_db;
+};
+
 
 int main(int argc, char *argv[])
 {
-
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
 
-    // Установка обработчиков сигналов
-    std::signal(SIGINT, signalHandler);
-    std::signal(SIGTERM, signalHandler);
-
     if (argc < 4)
     {
         std::cerr << "Usage: " << argv[0] << " <comPortName> <databasePath> <httpPort>" << std::endl;
-        std::cerr << "Example: " << argv[0] << " /tmp/vcom0 temperature.db 8080" << std::endl;
+        std::cerr << "Example: " << argv[0] << " /tmp/vcom0 /tmp/temperature.db 8080" << std::endl;
         return 1;
     }
 
@@ -308,40 +351,36 @@ int main(int argc, char *argv[])
     std::string db_path = argv[2];
     int http_port = std::stoi(argv[3]);
 
-    // Создать директории для БД если нужно
     std::filesystem::create_directories(std::filesystem::path(db_path).parent_path());
 
-    // Инициализация базы данных
-    Database db(db_path);
+    DB::Database db(db_path);
     g_database = &db;
 
     if (!db.isOpen())
     {
-        std::cerr << "Failed to open database: " << db_path << std::endl;
+        std::cerr << "ERROR: Failed to open database: " << db_path << std::endl;
         return 1;
     }
 
     if (!db.initialize())
     {
-        std::cerr << "Failed to initialize database" << std::endl;
+        std::cerr << "ERROR: Failed to initialize database" << std::endl;
         return 1;
     }
 
     std::cout << "Database initialized: " << db_path << std::endl;
 
-    // Открытие COM порта
     VirtualCOM::VirtualComPort com_port(com_port_name);
 
     if (!com_port.isOpen())
     {
-        std::cerr << "Failed to open COM port: " << com_port_name << std::endl;
+        std::cerr << "ERROR: Failed to open COM port: " << com_port_name << std::endl;
         return 1;
     }
 
     std::cout << "COM port opened: " << com_port_name << std::endl;
 
-    // Запуск HTTP сервера
-    HttpServer server(http_port);
+    HS::HttpServer server(http_port);
 
     server.registerHandler("/", handleIndex);
     server.registerHandler("/api/current", handleCurrentTemperature);
@@ -349,38 +388,59 @@ int main(int argc, char *argv[])
 
     if (!server.start())
     {
-        std::cerr << "Failed to start HTTP server on port " << http_port << std::endl;
+        std::cerr << "ERROR: Failed to start HTTP server on port " << http_port << std::endl;
         return 1;
     }
 
     std::cout << "HTTP server started on port " << http_port << std::endl;
-    std::cout << "Access web interface at http://localhost:" << http_port << "/" << std::endl;
+    std::cout << "Access interface at http://localhost:" << http_port << "/" << std::endl;
 
-    // Запуск потоков
-    std::thread sensor_thread(sensorReaderThread, std::ref(com_port), std::ref(db));
-    std::thread cleanup_thread_obj(cleanupThread, std::ref(db));
+    SensorReaderThread sensor_thread(com_port, db);
+    CleanupThread cleanup_thread(db);
 
-    // Ожидание завершения
-    while (g_running)
+    if (sensor_thread.Start() != Threads::THREAD_SUCCESS)
     {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cerr << "ERROR: Failed to start sensor reader thread" << std::endl;
+        server.stop();
+        return 1;
     }
 
-    // Остановка сервера
+    if (cleanup_thread.Start() != Threads::THREAD_SUCCESS)
+    {
+        std::cerr << "ERROR: Failed to start cleanup thread" << std::endl;
+        sensor_thread.Stop();
+        sensor_thread.Join();
+        server.stop();
+        return 1;
+    }
+
+    sensor_thread.WaitStartup();
+    cleanup_thread.WaitStartup();
+
+    std::string input;
+
+    while (true)
+    {
+        std::getline(std::cin, input);
+        
+        if (std::cin.eof())
+        {
+            std::cout << "\nShutting down..." << std::endl;
+            break;
+        }
+    }
+
+    std::cout << "Stopping threads..." << std::endl;
+
+    sensor_thread.Stop();
+    cleanup_thread.Stop();
+
+    sensor_thread.Join();
+    cleanup_thread.Join();
+
     server.stop();
 
-    // Ожидание завершения потоков
-    if (sensor_thread.joinable())
-    {
-        sensor_thread.join();
-    }
-
-    if (cleanup_thread_obj.joinable())
-    {
-        cleanup_thread_obj.join();
-    }
-
-    std::cout << "Server stopped" << std::endl;
+    std::cout << "Server stopped successfully" << std::endl;
 
     return 0;
 }

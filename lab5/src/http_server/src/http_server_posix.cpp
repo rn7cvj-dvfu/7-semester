@@ -3,6 +3,9 @@
 #include <sstream>
 #include <vector>
 
+namespace HttpServer
+{
+
 std::string HttpResponse::toString() const
 {
     std::ostringstream oss;
@@ -246,3 +249,5 @@ HttpRequest HttpServer::parseRequest(const std::string &raw_request)
 
     return request;
 }
+
+} // namespace HttpServer

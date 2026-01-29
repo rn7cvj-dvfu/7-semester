@@ -9,11 +9,18 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
-typedef SOCKET socket_t;
 #else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#endif
+
+namespace HttpServer
+{
+
+#ifdef _WIN32
+typedef SOCKET socket_t;
+#else
 typedef int socket_t;
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
@@ -116,3 +123,5 @@ private:
     WSADATA wsa_data_;
 #endif
 };
+
+} // namespace HttpServer

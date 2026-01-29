@@ -2,6 +2,9 @@
 #include <iostream>
 #include <sstream>
 
+namespace Database
+{
+
 Database::Database(const std::string &db_path)
     : db_(nullptr), db_path_(db_path)
 {
@@ -279,3 +282,5 @@ int Database::cleanOldData(const DateTime &older_than)
 
     return (rc == SQLITE_DONE) ? changes : 0;
 }
+
+} // namespace Database
