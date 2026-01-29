@@ -3,21 +3,24 @@
 # Справка по параметрам:
 # --rebuild              Пересборить проект
 # --pull                 Обновить репозиторий перед сборкой
-# --server-args <args>   Аргументы для сервера (default: /dev/pts/3, ./data/temperature.db, 8080)
+# --server-args <args>   Аргументы для сервера (default: /tmp/vcom_logger, ./data/temperature.db, 8080)
 #                        Параметры: <comPort> <databasePath> <httpPort>
-# --sensor-args <args>   Аргументы для сенсора (default: /dev/pts/4, 20, 40, 1000, 100)
+# --sensor-args <args>   Аргументы для сенсора (default: /tmp/vcom_sensor, 20, 40, 1000, 100)
 #                        Параметры: <comPort> <minValue> <maxValue> <interval> <randomShift>
 #
+# ВАЖНО: Перед запуском установите виртуальные COM порты:
+#   ../../../lab4/src/.tools/setup_vcom.sh
+#
 # Пример использования:
-# ./run.sh --rebuild --server-args /dev/pts/3 ./data/temp.db 8888
-# ./run.sh --sensor-args /dev/pts/4 15 35 2000 50
+# ./run.sh --rebuild --server-args /tmp/vcom_logger ./data/temp.db 8888
+# ./run.sh --sensor-args /tmp/vcom_sensor 15 35 2000 50
 
 BUILD_DIR="build"
 SENSOR_EXE="sensor"
 SERVER_EXE="server"
 
-# Параметры по умолчанию
-SERVER_ARGS=("/dev/pts/3" "./data/temperature.db" "8080")
+# Параметры по умолчанию (используются виртуальные COM порты из lab4)
+SERVER_ARGS=("/tmp/vcom_logger" "./data/temperature.db" "8080")
 SENSOR_ARGS=()
 
 # Параметры
@@ -58,7 +61,7 @@ done
 
 # Значения по умолчанию если не указаны
 if [ ${#SENSOR_ARGS[@]} -eq 0 ]; then
-    SENSOR_ARGS=("/dev/pts/4" "20" "40" "1000" "100")
+    SENSOR_ARGS=("/tmp/vcom_sensor" "20" "40" "1000" "100")
 fi
 
 # 1. Обновление репозитория
@@ -140,24 +143,18 @@ if [ ! -f "./$SENSOR_EXE" ]; then
     exit 1
 fi
 
-echo "Запуск $SERVER_EXE с параметрами: ${SERVER_ARGS[@]}"
-./$SERVER_EXE "${SERVER_ARGS[@]}" &
-SERVER_PID=$!
-
 sleep 2
-
 echo "Запуск $SENSOR_EXE с параметрами: ${SENSOR_ARGS[@]}"
-./$SENSOR_EXE "${SENSOR_ARGS[@]}" &
-SENSOR_PID=$!
-
 echo ""
 echo "Server PID: $SERVER_PID"
 echo "Sensor PID: $SENSOR_PID"
 echo ""
 echo "Нажмите Ctrl+C для остановки приложений"
 echo ""
+echo "Запуск $SERVER_EXE с параметрами: ${SERVER_ARGS[@]}"
+./$SERVER_EXE "${SERVER_ARGS[@]}"
 
-# Ожидание завершения процессов
-wait $SERVER_PID $SENSOR_PID
+echo "Запуск $SENSOR_EXE с параметрами: ${SENSOR_ARGS[@]}"
+./$SENSOR_EXE "${SENSOR_ARGS[@]}"
 
 cd ..
