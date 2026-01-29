@@ -4,12 +4,9 @@ project(TemperatureServer)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Найти SQLite3
-# Сначала проверяем наличие в external/sqlite3
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3/include/sqlite3.h")
     message(STATUS "Using SQLite3 from external directory")
     
-    # Создаём библиотеку SQLite3 из amalgamation
     add_library(sqlite3 STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3/src/sqlite3.c
         ${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3/include/sqlite3.h
@@ -19,7 +16,6 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3/include/sqlite3.h")
         ${CMAKE_CURRENT_SOURCE_DIR}/external/sqlite3/include
     )
     
-    # Отключаем предупреждения для SQLite3
     if(MSVC)
         target_compile_options(sqlite3 PRIVATE /W0)
     else()
@@ -46,7 +42,6 @@ else()
     endif()
 endif()
 
-# Создаем библиотеку для работы с потоками (из lab3)
 set(THREADS_SOURCES "")
 
 if(WIN32)
@@ -74,7 +69,6 @@ if(UNIX)
     target_link_libraries(threads PRIVATE pthread)
 endif()
 
-# Библиотека DateTime (из lab4)
 add_library(date_time 
     ../../lab4/src/date_time/src/date_time.cpp
     ../../lab4/src/date_time/include/date_time.hpp
@@ -84,7 +78,6 @@ target_include_directories(date_time PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../lab4/src/date_time/include
 )
 
-# Библиотека Database
 add_library(database
     database/src/database.cpp
     database/include/database.hpp
@@ -98,7 +91,6 @@ target_include_directories(database PUBLIC
 
 target_link_libraries(database date_time ${SQLITE3_LIBRARIES})
 
-# Библиотека HTTP Server
 set(HTTP_SERVER_SOURCES
     http_server/include/http_server.hpp
 )
@@ -119,7 +111,6 @@ target_include_directories(http_server PUBLIC
 
 target_link_libraries(http_server ${HTTP_SERVER_LIBS})
 
-# Исходные файлы виртуального COM порта (из lab4)
 set(VCOM_SOURCES
     ../../lab4/src/virtual_com_port/include/virtual_com_port.hpp
 )
@@ -130,7 +121,6 @@ elseif(UNIX)
     list(APPEND VCOM_SOURCES ../../lab4/src/virtual_com_port/src/virtual_com_port_posix.cpp)
 endif()
 
-# Программа сенсора (из lab4)
 add_executable(sensor ../../lab4/src/sensor.cpp ${VCOM_SOURCES})
 
 target_include_directories(sensor PRIVATE 
@@ -145,7 +135,6 @@ if(UNIX)
     target_link_libraries(sensor util)
 endif()
 
-# Главная программа сервера
 add_executable(server server.cpp ${VCOM_SOURCES})
 
 target_include_directories(server PRIVATE 
@@ -162,10 +151,8 @@ if(UNIX)
     target_link_libraries(server util)
 endif()
 
-# Копирование веб-файлов
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/web/ 
      DESTINATION ${CMAKE_BINARY_DIR}/web/)
 
-# Установка
 install(TARGETS sensor server DESTINATION bin)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/web/ DESTINATION share/temperature_server/web)
