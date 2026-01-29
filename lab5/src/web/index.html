@@ -1,415 +1,275 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temperature Monitoring System</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Мониторинг температуры</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: #ffffff;
-            min-height: 100vh;
-            padding: 40px 20px;
-            color: #000000;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #000000;
-            margin-bottom: 50px;
-            font-size: 2em;
-            font-weight: 300;
-            letter-spacing: -0.5px;
-        }
-        
-        .current-temp {
-            border: 1px solid #000000;
-            padding: 40px;
-            margin-bottom: 40px;
-            text-align: center;
-        }
-        
-        .temp-display {
-            font-size: 5em;
-            font-weight: 300;
-            color: #000000;
-            margin: 20px 0;
-            letter-spacing: -2px;
-        }
-        
-        .temp-label {
-            font-size: 0.9em;
-            color: #000000;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 400;
-        }
-        
-        .timestamp {
-            color: #666666;
-            font-size: 0.85em;
-            font-weight: 300;
-        }
-        
-        .controls {
-            border: 1px solid #000000;
-            padding: 25px;
-            margin-bottom: 40px;
-        }
-        
-        .control-group {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        
-        .control-group label {
-            font-weight: 400;
-            color: #000000;
-            font-size: 0.9em;
-        }
-        
-        .control-group select,
-        .control-group button {
-            padding: 8px 16px;
-            border: 1px solid #000000;
-            font-size: 0.9em;
-            cursor: pointer;
-            background: #ffffff;
-            color: #000000;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-        
-        .control-group select:hover,
-        .control-group button:hover {
-            background: #000000;
-            color: #ffffff;
-        }
-        
-        .control-group select:focus,
-        .control-group button:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px #000000;
-        }
-        
-        .chart-container {
-            border: 1px solid #000000;
-            padding: 40px;
-            margin-bottom: 40px;
-        }
-        
-        .chart-container h2 {
-            color: #000000;
-            margin-bottom: 30px;
-            font-size: 1.2em;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .data-table {
-            border: 1px solid #000000;
-            padding: 40px;
-            overflow-x: auto;
-        }
-        
-        .data-table h2 {
-            color: #000000;
-            margin-bottom: 30px;
-            font-size: 1.2em;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th, td {
-            padding: 15px 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 0.9em;
-        }
-        
-        th {
-            background: #000000;
-            color: #ffffff;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.85em;
-        }
-        
-        tr:hover {
-            background: #f8f8f8;
-        }
-        
-        tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666666;
-            font-style: italic;
-            font-weight: 300;
-        }
-        
-        .error {
-            background: #000000;
-            color: #ffffff;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 0.9em;
-        }
-        
-        @media (max-width: 768px) {
-            body {
-                padding: 20px 15px;
-            }
-            
-            h1 {
-                font-size: 1.5em;
-                margin-bottom: 30px;
-            }
-            
-            .temp-display {
-                font-size: 3.5em;
-            }
-            
-            .current-temp,
-            .controls,
-            .chart-container,
-            .data-table {
-                padding: 25px 20px;
-            }
-            
-            .control-group {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .control-group select,
-            .control-group button {
-                width: 100%;
-            }
-        }
-    </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Мониторинг температуры</h1>
-        
-        <div class="current-temp">
-            <div class="temp-label">Текущая температура</div>
-            <div class="temp-display" id="currentTemp">--</div>
-            <div class="timestamp" id="currentTimestamp">Загрузка...</div>
-        </div>
-        
-        <div class="controls">
-            <div class="control-group">
-                <label for="periodSelect">Периодичность:</label>
-                <select id="periodSelect">
-                    <option value="3600">Последний час</option>
-                    <option value="21600">Последние 6 часов</option>
-                    <option value="86400" selected>Последние 24 часа</option>
-                </select>
-                
-                <label for="viewType">View Type:</label>
-                <select id="viewType">
-                    <option value="all">Все измерения</option>
-                    <option value="hourly" selected>Среднее (час)</option>
-                    <option value="daily">Среднее (день)</option>
-                </select>
-                
-                <button onclick="updateChart()">🔄 Обновить</button>
+
+<body class="bg-white text-black min-h-screen p-6">
+
+<div class="max-w-7xl mx-auto">
+
+    <h1 class="text-3xl font-light text-center mb-10">
+        Мониторинг температуры
+    </h1>
+
+    <!-- Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="lg:col-span-1 space-y-6">
+
+            <!-- Current temperature -->
+            <div class="bg-white rounded-lg shadow-sm p-6 text-center">
+                <div class="text-xs uppercase tracking-widest mb-2">
+                    Текущая температура
+                </div>
+                <div
+                    id="currentTemp"
+                    class="text-6xl font-light tracking-tight mb-3"
+                >
+                    --
+                </div>
+                <div
+                    id="currentTimestamp"
+                    class="text-sm text-gray-500"
+                >
+                    Загрузка…
+                </div>
             </div>
-        </div>
-        
-        <div class="chart-container">
-            <h2>График температуры</h2>
-            <canvas id="tempChart"></canvas>
-        </div>
-        
-        <div class="data-table">
-            <h2>Последние измерения</h2>
-            <div id="tableContainer"></div>
-        </div>
+
+            <!-- Controls -->
+            <div class="bg-white rounded-lg shadow-sm p-4 space-y-4">
+
+                <div>
+                    <label class="block text-xs uppercase tracking-widest mb-1">
+                        Период
+                    </label>
+                    <select
+                        id="periodSelect"
+                        class="w-full appearance-none border-0 px-3 py-2 text-sm
+                               bg-white cursor-pointer
+                               focus:outline-none focus:ring-2 focus:ring-black"
+                    >
+                        <option value="3600">Последний час</option>
+                        <option value="43200">Последние 12 часов</option>
+                        <option value="86400" selected>Последние 24 часа</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs uppercase tracking-widest mb-1">
+                        Тип данных
+                    </label>
+                    <select
+                        id="viewType"
+                        class="w-full appearance-none border-0 px-3 py-2 text-sm
+                               bg-white cursor-pointer
+                               focus:outline-none focus:ring-2 focus:ring-black"
+                    >
+                        <option value="all">Все измерения</option>
+                        <option value="hourly" selected>Среднее (час)</option>
+                        <option value="daily">Среднее (день)</option>
+                    </select>
+                </div>
+
+                <button
+                    onclick="updateChart()"
+                    class="w-full border-0 py-2 text-sm font-medium
+                           hover:bg-black hover:text-white
+                           active:scale-[0.98]
+                           transition"
+                >
+                     Обновить
+                </button>
+
+            </div>
+
+            <!-- Table -->
+            <!-- <div class="border border-black p-4 overflow-x-auto">
+                <h2 class="text-xs uppercase tracking-widest mb-3">
+                    Последние измерения
+                </h2>
+                <div id="tableContainer"></div>
+            </div> -->
+
+        </aside>
+
+
+        <main class="lg:col-span-3">
+            <div class="bg-white rounded-lg shadow-sm p-6 h-full">
+                <h2 class="text-xs uppercase tracking-widest mb-4">
+                    График температуры
+                </h2>
+                <div class="relative h-[420px]">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+        </main>
+
     </div>
-    
-    <script>
-        let chart = null;
-        
-        async function updateCurrentTemp() {
-            try {
-                const response = await fetch('/api/current');
-                const data = await response.json();
-                
-                if (data.error) {
-                    document.getElementById('currentTemp').textContent = '--';
-                    document.getElementById('currentTimestamp').textContent = 'Нет информации';
-                } else {
-                    document.getElementById('currentTemp').textContent = data.temperature + '°C';
-                    document.getElementById('currentTimestamp').textContent = 'Обновлено: ' + data.timestamp;
-                }
-            } catch (error) {
-                console.error('Error fetching current temperature:', error);
-                document.getElementById('currentTemp').textContent = 'Error';
-                document.getElementById('currentTimestamp').textContent = 'Ошибка';
-            }
+</div>
+
+<script>
+let chart = null;
+
+
+async function updateCurrentTemp() {
+    try {
+        const response = await fetch('/api/current');
+        const data = await response.json();
+
+        if (data.error) {
+            currentTemp.textContent = '--';
+            currentTimestamp.textContent = 'Нет данных';
+        } else {
+            currentTemp.textContent = data.temperature + '°C';
+            currentTimestamp.textContent = 'Обновлено: ' + data.timestamp;
         }
-        
-        async function updateChart() {
-            const period = parseInt(document.getElementById('periodSelect').value);
-            const viewType = document.getElementById('viewType').value;
-            
-            const now = Math.floor(Date.now() / 1000);
-            const start = now - period;
-            
-            try {
-                const response = await fetch(`/api/stats?start=${start}&end=${now}&period=${viewType}`);
-                const data = await response.json();
-                
-                let labels = [];
-                let temperatures = [];
-                
-                if (viewType === 'all') {
-                    data.forEach(item => {
-                        labels.push(item.timestamp);
-                        temperatures.push(item.temperature);
-                    });
-                } else {
-                    data.forEach(item => {
-                        labels.push(item.period_start);
-                        temperatures.push(item.avg_temperature);
-                    });
-                }
-                
-                if (chart) {
-                    chart.destroy();
-                }
-                
-                const ctx = document.getElementById('tempChart').getContext('2d');
-                chart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Температура (°C)',
-                            data: temperatures,
-                            borderColor: '#000000',
-                            backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                            borderWidth: 1,
-                            tension: 0.4,
-                            fill: true,
-                            pointRadius: 2,
-                            pointHoverRadius: 5,
-                            pointBackgroundColor: '#000000'
-                        }]
+    } catch (e) {
+        console.error(e);
+        currentTemp.textContent = '--';
+        currentTimestamp.textContent = 'Ошибка';
+    }
+}
+
+
+
+async function updateChart() {
+    const period = parseInt(document.getElementById('periodSelect').value);
+    const viewType = document.getElementById('viewType').value;
+
+    const now = Math.floor(Date.now() / 1000);
+    const start = now - period;
+
+    try {
+        const response = await fetch(
+            `/api/stats?start=${start}&end=${now}&period=${viewType}`
+        );
+        const data = await response.json();
+
+        const labels = [];
+        const temps = [];
+
+        if (viewType === 'all') {
+            data.forEach(item => {
+                labels.push(item.timestamp);
+                temps.push(item.temperature);
+            });
+        } else {
+            data.forEach(item => {
+                labels.push(item.period_start);
+                temps.push(item.avg_temperature);
+            });
+        }
+
+        if (chart) chart.destroy();
+
+        chart = new Chart(
+            document.getElementById('tempChart').getContext('2d'),
+            {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Температура (°C)',
+                        data: temps,
+                        borderColor: '#000',
+                        backgroundColor: 'rgba(0,0,0,0.05)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 2.5,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top',
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                            }
-                        },
-                        scales: {
-                            x: {
-                                display: true,
-                                title: {
-                                    display: true,
-                                    text: 'Время'
-                                },
-                                ticks: {
-                                    maxTicksLimit: 10,
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            },
-                            y: {
-                                display: true,
-                                title: {
-                                    display: true,
-                                    text: 'Температура (°C)'
-                                }
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 10,
+                                maxRotation: 45,
+                                minRotation: 45
                             }
                         }
                     }
-                });
-                
-                updateTable(data, viewType);
-                
-            } catch (error) {
-                console.error('Error fetching statistics:', error);
-            }
-        }
-        
-        function updateTable(data, viewType) {
-            let html = '<table><thead><tr>';
-            
-            if (viewType === 'all') {
-                html += '<th>Время</th><th>Температура (°C)</th>';
-            } else {
-                html += '<th>Начало периода</th><th>Конец периода</th><th>Средняя температура (°C)</th><th>Количество</th>';
-            }
-            
-            html += '</tr></thead><tbody>';
-            
-            const displayData = data.slice(-20).reverse();
-            
-            displayData.forEach(item => {
-                html += '<tr>';
-                if (viewType === 'all') {
-                    html += `<td>${item.timestamp}</td>`;
-                    html += `<td>${item.temperature}</td>`;
-                } else {
-                    html += `<td>${item.period_start}</td>`;
-                    html += `<td>${item.period_end}</td>`;
-                    html += `<td>${item.avg_temperature.toFixed(2)}</td>`;
-                    html += `<td>${item.count}</td>`;
                 }
-                html += '</tr>';
-            });
-            
-            html += '</tbody></table>';
-            
-            document.getElementById('tableContainer').innerHTML = html;
+            }
+        );
+
+        updateTable(data, viewType);
+
+    } catch (e) {
+        console.error('Chart error:', e);
+    }
+}
+
+
+function updateTable(data, viewType) {
+    let html = `
+        <table class="w-full text-sm border-collapse">
+            <thead>
+                <tr class="bg-black text-white">
+    `;
+
+    if (viewType === 'all') {
+        html += `
+            <th class="p-2 text-left">Время</th>
+            <th class="p-2 text-left">°C</th>
+        `;
+    } else {
+        html += `
+            <th class="p-2 text-left">Начало</th>
+            <th class="p-2 text-left">Конец</th>
+            <th class="p-2 text-left">Среднее</th>
+            <th class="p-2 text-left">Кол-во</th>
+        `;
+    }
+
+    html += '</tr></thead><tbody>';
+
+    data.slice(-20).reverse().forEach(item => {
+        html += '<tr class="border-b hover:bg-gray-100">';
+        if (viewType === 'all') {
+            html += `
+                <td class="p-2">${item.timestamp}</td>
+                <td class="p-2">${item.temperature}</td>
+            `;
+        } else {
+            html += `
+                <td class="p-2">${item.period_start}</td>
+                <td class="p-2">${item.period_end}</td>
+                <td class="p-2">${item.avg_temperature.toFixed(2)}</td>
+                <td class="p-2">${item.count}</td>
+            `;
         }
-        
-        setInterval(updateCurrentTemp, 5000);
-        
-        window.onload = function() {
-            updateCurrentTemp();
-            updateChart();
-        };
-    </script>
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('tableContainer').innerHTML = html;
+}
+
+
+setInterval(updateCurrentTemp, 5000);
+
+window.onload = () => {
+    updateCurrentTemp();
+    updateChart();
+};
+</script>
+
 </body>
 </html>

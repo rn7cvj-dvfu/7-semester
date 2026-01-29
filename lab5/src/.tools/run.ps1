@@ -53,14 +53,14 @@ if ($Rebuild) {
 
     Set-Location $BuildDir
 
-    cmake -G "Visual Studio 18 2026" ..
+    cmake -G "MinGW Makefiles" ..
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Ошибка генерации CMake"
         exit 1
     }
 
-    cmake --build . --config Release
+    cmake --build .
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Ошибка сборки"
         exit 1
@@ -72,8 +72,8 @@ if ($Rebuild) {
 Set-Location $BuildDir
 
 # 4. Запуск
-$SensorExePath = Join-Path (Get-Location) "Release\$SensorExe"
-$ServerExePath = Join-Path (Get-Location) "Release\$ServerExe"
+$SensorExePath = Join-Path (Get-Location) $SensorExe
+$ServerExePath = Join-Path (Get-Location) $ServerExe
 
 if (-not (Test-Path $SensorExePath)) {
     Write-Error "Файл $SensorExe не найден в $SensorExePath"
