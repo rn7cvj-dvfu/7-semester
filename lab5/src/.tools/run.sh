@@ -1,33 +1,15 @@
 #!/bin/bash
 
-# Справка по параметрам:
-# --rebuild              Пересборить проект
-# --pull                 Обновить репозиторий перед сборкой
-# --server-args <args>   Аргументы для сервера (default: /tmp/vcom_logger, ./data/temperature.db, 8080)
-#                        Параметры: <comPort> <databasePath> <httpPort>
-# --sensor-args <args>   Аргументы для сенсора (default: /tmp/vcom_sensor, 20, 40, 1000, 100)
-#                        Параметры: <comPort> <minValue> <maxValue> <interval> <randomShift>
-#
-# ВАЖНО: Перед запуском установите виртуальные COM порты:
-#   ../../../lab4/src/.tools/setup_vcom.sh
-#
-# Пример использования:
-# ./run.sh --rebuild --server-args /tmp/vcom_logger ./data/temp.db 8888
-# ./run.sh --sensor-args /tmp/vcom_sensor 15 35 2000 50
-
 BUILD_DIR="build"
 SENSOR_EXE="sensor"
 SERVER_EXE="server"
 
-# Параметры по умолчанию (используются виртуальные COM порты из lab4)
 SERVER_ARGS=("/tmp/vcom_logger" "./data/temperature.db" "8080")
 SENSOR_ARGS=()
 
-# Параметры
 PULL=false
 REBUILD=false
 
-# Парсинг аргументов
 while [[ $# -gt 0 ]]; do
     case $1 in
         --pull)
@@ -59,12 +41,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Значения по умолчанию если не указаны
 if [ ${#SENSOR_ARGS[@]} -eq 0 ]; then
     SENSOR_ARGS=("/tmp/vcom_sensor" "20" "40" "1000" "100")
 fi
 
-# 1. Обновление репозитория
 if [ "$PULL" = true ]; then
     echo "== Обновление репозитория =="
 
@@ -80,7 +60,6 @@ if [ "$PULL" = true ]; then
     fi
 fi
 
-# 2. Проверка инструментов
 echo "== Проверка CMake =="
 
 if ! command -v cmake &> /dev/null; then
@@ -90,7 +69,6 @@ fi
 
 echo "CMake $(cmake --version | head -n1)"
 
-# 3. Сборка
 if [ "$REBUILD" = true ]; then
     echo "== Сборка проекта =="
 
@@ -115,7 +93,6 @@ if [ "$REBUILD" = true ]; then
 
     cd ..
 else
-    # Проверяем, есть ли уже build директория
     if [ ! -d "$BUILD_DIR" ]; then
         echo "== Сборка проекта (автоматическая) =="
         mkdir -p "$BUILD_DIR"
@@ -128,7 +105,6 @@ fi
 
 cd "$BUILD_DIR"
 
-# 4. Запуск
 echo "== Запуск приложений =="
 
 if [ ! -f "./$SERVER_EXE" ]; then
@@ -144,17 +120,9 @@ if [ ! -f "./$SENSOR_EXE" ]; then
 fi
 
 sleep 2
-echo "Запуск $SENSOR_EXE с параметрами: ${SENSOR_ARGS[@]}"
-echo ""
-echo "Server PID: $SERVER_PID"
-echo "Sensor PID: $SENSOR_PID"
-echo ""
-echo "Нажмите Ctrl+C для остановки приложений"
-echo ""
-echo "Запуск $SERVER_EXE с параметрами: ${SERVER_ARGS[@]}"
+
 ./$SERVER_EXE "${SERVER_ARGS[@]}"
 
-echo "Запуск $SENSOR_EXE с параметрами: ${SENSOR_ARGS[@]}"
 ./$SENSOR_EXE "${SENSOR_ARGS[@]}"
 
 cd ..

@@ -6,7 +6,7 @@ param(
 $BuildDir = "build"
 $ExeName  = "lab2.exe"
 
-# 1. Обновление репозитория
+
 if ($Pull) {
 
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
@@ -20,7 +20,6 @@ if ($Pull) {
     }
 }
 
-# 2. Проверка инструментов
 if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
     Write-Error "CMake не найден"
     exit 1
@@ -31,7 +30,6 @@ if (-not (Get-Command gcc -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# 3. Сборка
 if ($Rebuild) {
     if (Test-Path $BuildDir) {
         Remove-Item -Recurse -Force $BuildDir
@@ -61,7 +59,7 @@ if ($Rebuild) {
 
 Set-Location $BuildDir
 
-# 4. Запуск
+
 $ExePath = Join-Path (Get-Location) $ExeName
 
 if (-not (Test-Path $ExePath)) {

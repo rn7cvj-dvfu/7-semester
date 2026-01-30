@@ -4,13 +4,13 @@ BUILD_DIR="build"
 SENSOR_EXE="sensor"
 LOGGER_EXE="logger"
 
-# Параметры
+
 PULL=false
 REBUILD=false
 SENSOR_ARGS=()
 LOGGER_ARGS=()
 
-# Парсинг аргументов
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --pull)
@@ -41,7 +41,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Значения по умолчанию если не указаны
 if [ ${#SENSOR_ARGS[@]} -eq 0 ]; then
     SENSOR_ARGS=("/tmp/vcom_sensor" "0" "100" "1000" "100")
 fi
@@ -50,7 +49,7 @@ if [ ${#LOGGER_ARGS[@]} -eq 0 ]; then
     LOGGER_ARGS=("/tmp/vcom_logger" "./logs/all.log" "./logs/hour.log" "./logs/day.log")
 fi
 
-# 1. Обновление репозитория
+
 if [ "$PULL" = true ]; then
     echo "== Обновление репозитория =="
 
@@ -66,7 +65,6 @@ if [ "$PULL" = true ]; then
     fi
 fi
 
-# 2. Проверка инструментов
 echo "== Проверка CMake и GCC =="
 
 if ! command -v cmake &> /dev/null; then
@@ -82,7 +80,7 @@ fi
 echo "CMake $(cmake --version | head -n1)"
 echo "GCC $(gcc --version | head -n1)"
 
-# 3. Сборка
+
 if [ "$REBUILD" = true ]; then
     echo "== Сборка проекта =="
 
@@ -107,7 +105,7 @@ if [ "$REBUILD" = true ]; then
 
     cd ..
 else
-    # Проверяем, есть ли уже build директория
+
     if [ ! -d "$BUILD_DIR" ]; then
         echo "== Сборка проекта (автоматическая) =="
         mkdir -p "$BUILD_DIR"
@@ -120,18 +118,16 @@ fi
 
 cd "$BUILD_DIR"
 
-# 4. Запуск
+
 echo "== Запуск приложений =="
 
-# Проверяем наличие виртуальных COM портов
+
 if [ ! -e "${SENSOR_ARGS[0]}" ] || [ ! -e "${LOGGER_ARGS[0]}" ]; then
     echo "Warning: Виртуальные COM порты не найдены!"
     echo "Создайте их в отдельном терминале:"
     echo "  ./.tools/setup_vcom.sh"
     echo ""
-    echo "Или используйте реальные COM порты:"
-    echo "  $0 --sensor-args /dev/ttyUSB0 0 100 1000 100 --logger-args /dev/ttyUSB1 ./logs/all.log ./logs/hour.log ./logs/day.log"
-    exit 1
+   exit 1
 fi
 
 if [ ! -f "./$SENSOR_EXE" ]; then
@@ -154,7 +150,6 @@ echo "Запуск $LOGGER_EXE с параметрами: ${LOGGER_ARGS[@]}"
 ./$LOGGER_EXE "${LOGGER_ARGS[@]}" &
 LOGGER_PID=$!
 
-# Ожидание завершения процессов
 wait $SENSOR_PID $LOGGER_PID
 
 cd ..
