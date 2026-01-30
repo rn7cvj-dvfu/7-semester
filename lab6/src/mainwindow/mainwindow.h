@@ -9,9 +9,18 @@
 #include <QVBoxLayout>
 #include <QTimer>
 #include <QtCharts/QChartView>
+#include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QDateTimeAxis>
 #include <QtCharts/QValueAxis>
+
+#if QT_VERSION_MAJOR == 5
+#  include <QtCharts/QChartGlobal>
+#  ifndef QT_CHARTS_USE_NAMESPACE
+#    define QT_CHARTS_USE_NAMESPACE using namespace QtCharts;
+#  endif
+QT_CHARTS_USE_NAMESPACE
+#endif
 #include "../apihandler/apihandler.h"
 
 /**
