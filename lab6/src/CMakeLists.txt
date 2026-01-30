@@ -15,10 +15,10 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Network Char
 # Исходные файлы
 set(PROJECT_SOURCES
     main.cpp
-    mainwindow.cpp
-    mainwindow.h
-    apihandler.cpp
-    apihandler.h
+    mainwindow/mainwindow.cpp
+    mainwindow/mainwindow.h
+    apihandler/apihandler.cpp
+    apihandler/apihandler.h
 )
 
 # Создание исполняемого файла

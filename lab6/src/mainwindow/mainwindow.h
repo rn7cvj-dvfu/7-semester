@@ -12,7 +12,7 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QDateTimeAxis>
 #include <QtCharts/QValueAxis>
-#include "apihandler.h"
+#include "../apihandler/apihandler.h"
 
 /**
  * @brief Главное окно приложения

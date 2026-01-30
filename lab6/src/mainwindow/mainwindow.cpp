@@ -3,6 +3,11 @@
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QHeaderView>
+#include "mainwindow.h"
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QMessageBox>
+#include <QHeaderView>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), currentPeriod("86400"), currentViewType("hourly")
