@@ -78,13 +78,19 @@ void MainWindow::setupUi()
     viewTypeComboBox->setCurrentIndex(1);
     controlLayout->addWidget(viewTypeComboBox);
 
-    refreshButton = new QPushButton("🔄 Обновить");
-    controlLayout->addWidget(refreshButton);
+        refreshButton = new QPushButton();
+        refreshButton->setIcon(QIcon::fromTheme("view-refresh"));
+        refreshButton->setText("Обновить");
+        refreshButton->setToolTip("Обновить данные");
+        controlLayout->addWidget(refreshButton);
 
-    autoRefreshButton = new QPushButton("⏯ Авто");
-    autoRefreshButton->setCheckable(true);
-    autoRefreshButton->setChecked(true);
-    controlLayout->addWidget(autoRefreshButton);
+        autoRefreshButton = new QPushButton();
+        autoRefreshButton->setIcon(QIcon::fromTheme("media-playback-start"));
+        autoRefreshButton->setText("Авто");
+        autoRefreshButton->setCheckable(true);
+        autoRefreshButton->setChecked(true);
+        autoRefreshButton->setToolTip("Автоматическое обновление");
+        controlLayout->addWidget(autoRefreshButton);
 
     controlLayout->addStretch();
 
@@ -116,25 +122,10 @@ void MainWindow::setupUi()
 
     chartLayout->addWidget(chartView);
 
-    // === Таблица ===
-    QGroupBox *tableGroup = new QGroupBox("Последние измерения");
-    QVBoxLayout *tableLayout = new QVBoxLayout(tableGroup);
-
-    tableWidget = new QTableWidget();
-    tableWidget->setColumnCount(3);
-    tableWidget->setHorizontalHeaderLabels({"Время", "Температура (°C)", "Значение"});
-    tableWidget->horizontalHeader()->setStretchLastSection(true);
-    tableWidget->setAlternatingRowColors(true);
-    tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
-
-    tableLayout->addWidget(tableWidget);
-
     // === Сборка ===
     mainLayout->addWidget(currentTempGroup);
     mainLayout->addWidget(controlGroup);
     mainLayout->addWidget(chartGroup, 1);
-    mainLayout->addWidget(tableGroup, 1);
 
     setCentralWidget(centralWidget);
 

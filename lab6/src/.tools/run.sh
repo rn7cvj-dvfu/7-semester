@@ -1,45 +1,90 @@
 #!/bin/bash
-# Unified build and run script for lab6 (Linux/macOS)
+# Unified build and run script for lab6 (Linux/macOS) with --pull and --rebuild support
 set -e
 
-MODE=${1:-run}
-SCRIPT_DIR="$(dirname "$0")"
+PULL=0
+REBUILD=0
+EXE_NAME="temperature_monitor"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BUILD_DIR="$SCRIPT_DIR/../build"
+
+# Parse arguments
+for arg in "$@"; do
+    case $arg in
+        --pull)
+            PULL=1
+            ;;
+        --rebuild)
+            REBUILD=1
+            ;;
+        --exe=*)
+            EXE_NAME="${arg#*=}"
+            ;;
+        build)
+            MODE=build
+            ;;
+        run)
+            MODE=run
+            ;;
+        *)
+            echo "Unknown argument: $arg" >&2
+            echo "Usage: $0 [--pull] [--rebuild] [--exe=NAME] [build|run]"
+            exit 1
+            ;;
+    esac
+done
+
+MODE=${MODE:-run}
 cd "$SCRIPT_DIR"
 
-if [ "$MODE" = "build" ]; then
+# 1. Pull repo if requested
+if [ $PULL -eq 1 ]; then
+    if ! command -v git &> /dev/null; then
+        echo "Error: git not found!" >&2
+        exit 1
+    fi
+    git pull || echo "Warning: git pull failed (maybe no changes)"
+fi
+
+# 2. Build if requested
+if [ $REBUILD -eq 1 ]; then
     echo "================================"
     echo "Building Temperature Monitor GUI"
     echo "================================"
-    if ! command -v qmake &> /dev/null && ! command -v qmake6 &> /dev/null; then
-        echo "Error: Qt not found!"
-        echo "Please install Qt."
+    if ! command -v cmake &> /dev/null; then
+        echo "Error: cmake not found!" >&2
         exit 1
     fi
-    if [ ! -d "../build" ]; then
-        mkdir ../build
-    fi
-    cd ../build
+    rm -rf "$BUILD_DIR"
+    mkdir -p "$BUILD_DIR"
+    cd "$BUILD_DIR"
     echo "Running CMake..."
     cmake ..
     make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
-    exit $?
+    cd "$SCRIPT_DIR"
 fi
 
+# 3. Run
 if [ "$MODE" = "run" ]; then
     echo "================================"
     echo "Temperature Monitor GUI"
     echo "================================"
-    cd ../build
-    if [ ! -f "temperature_monitor" ]; then
+    cd "$BUILD_DIR"
+    if [ ! -f "$EXE_NAME" ]; then
         echo "Error: Executable not found!"
-        echo "Please run ./run.sh build first"
+        echo "Please run ./run.sh --rebuild first"
         exit 1
     fi
     echo "Starting Temperature Monitor..."
     echo "Make sure the server from lab5 is running on http://localhost:8080"
-    ./temperature_monitor
+    ./$EXE_NAME
     exit $?
 fi
 
-echo "Usage: $0 [build|run]"
+if [ "$MODE" = "build" ]; then
+    # Only build, already handled above
+    exit 0
+fi
+
+echo "Usage: $0 [--pull] [--rebuild] [--exe=NAME] [build|run]"
 exit 1
