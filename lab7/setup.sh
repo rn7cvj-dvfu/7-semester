@@ -11,11 +11,15 @@ sudo adduser --disabled-password --gecos "" $KIOSK_USER
 # === 2. Настройка автологина (LightDM) ===
 sudo apt-get update
 sudo apt-get install -y lightdm xbindkeys
+# Выбрать LightDM как дисплей-менеджер
+sudo dpkg-reconfigure -f noninteractive lightdm
+sudo systemctl enable lightdm
+sudo systemctl start lightdm
 sudo bash -c "cat > /etc/lightdm/lightdm.conf" <<EOF
 [Seat:*]
 autologin-user=$KIOSK_USER
 autologin-user-timeout=0
-user-session=ubuntu
+user-session=xsession
 EOF
 
 # === 3. Автозапуск приложения в X-сессии ===
