@@ -19,8 +19,8 @@ sudo systemctl start lightdm
 sudo bash -c "cat > /etc/lightdm/lightdm.conf" <<EOF
 [Seat:*]
 autologin-user=$KIOSK_USER
-autologin-user-timeout=0
-user-session=xsession
+autologin-user-timeout=5
+user-session=ubuntu
 EOF
 
 sudo bash -c "cat > /usr/share/xsessions/xsession.desktop" <<EOF
