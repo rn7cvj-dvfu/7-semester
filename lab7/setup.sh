@@ -23,35 +23,27 @@ autologin-user-timeout=0
 user-session=xsession
 EOF
 
+sudo bash -c "cat > /usr/share/xsessions/xsession.desktop" <<EOF
+[Desktop Entry]
+Name=XSession
+Comment=Custom X Session
+Exec=/bin/bash ~/.xsession
+Type=Application
+EOF
+
 # === 3. Автозапуск приложения в X-сессии ===
 sudo bash -c "cat > $KIOSK_HOME/.xsession" <<EOF
 #!/bin/bash
+echo "Starting kiosk session at \$(date)" >> /tmp/kiosk.log
 xset -dpms      # Отключить энергосбережение
 xset s off      # Отключить скринсейвер
 xset s noblank  # Отключить затемнение экрана
-$APP_PATH
+xmodmap \$HOME/.Xmodmap
+echo "Running start_apps.sh" >> /tmp/kiosk.log
+$APP_PATH >> /tmp/kiosk.log 2>&1
+echo "start_apps.sh finished" >> /tmp/kiosk.log
+exec bash  # Держать сессию открытой
 EOF
-sudo chown $KIOSK_USER:$KIOSK_USER $KIOSK_HOME/.xsession
-sudo chmod +x $KIOSK_HOME/.xsession
-
-
-# === 4. Блокировка клавиш  ===
-sudo bash -c "cat > $KIOSK_HOME/.Xmodmap" <<EOF
-keycode 67 = NoSymbol
-keycode 68 = NoSymbol
-keycode 69 = NoSymbol
-keycode 70 = NoSymbol
-keycode 71 = NoSymbol
-keycode 72 = NoSymbol
-keycode 73 = NoSymbol
-keycode 74 = NoSymbol
-keycode 75 = NoSymbol
-keycode 76 = NoSymbol
-EOF
-sudo chown $KIOSK_USER:$KIOSK_USER $KIOSK_HOME/.Xmodmap
-
-# Добавить загрузку Xmodmap в .xsession
-sudo sed -i "2i xmodmap \$HOME/.Xmodmap" $KIOSK_HOME/.xsession
 
 # === 5. Отключить доступ к терминалу (tty) ===
 sudo sed -i 's/^NAutoVTs=.*/NAutoVTs=0/' /etc/systemd/logind.conf || echo "NAutoVTs=0" | sudo tee -a /etc/systemd/logind.conf
