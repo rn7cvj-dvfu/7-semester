@@ -4,18 +4,9 @@ param(
     [string]$ExeName = "temperature_monitor.exe"
 )
 
-# Справка по параметрам:
-# -Rebuild         Пересборить проект
-# -Pull            Обновить репозиторий перед сборкой
-# -ExeName         Имя исполняемого файла (по умолчанию temperature_monitor.exe)
-#
-# Пример использования:
-# .\run.ps1 -Rebuild
-# .\run.ps1 -ExeName "my_app.exe"
 
 $BuildDir = "build"
 
-# 1. Обновление репозитория
 if ($Pull) {
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         Write-Error "Git не установлен или не в PATH"
@@ -27,7 +18,6 @@ if ($Pull) {
     }
 }
 
-# 2. Проверка инструментов
 if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
     Write-Error "CMake не найден"
     exit 1
@@ -35,7 +25,6 @@ if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
 
 Write-Host "CMake found: $(cmake --version | Select-Object -First 1)"
 
-# 3. Сборка
 
 if ($Rebuild) {
     if (Test-Path $BuildDir) {
@@ -61,7 +50,6 @@ if ($Rebuild) {
 
 Push-Location $BuildDir
 
-# 4. Запуск
 $exeCandidates = @(
     "Release/$ExeName",
     $ExeName,

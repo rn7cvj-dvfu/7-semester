@@ -5,23 +5,11 @@ param(
     [string[]]$SensorArgs = @("COM11", "20", "40", "1000", "100")
 )
 
-# Справка по параметрам:
-# -Rebuild         Пересборить проект
-# -Pull            Обновить репозиторий перед сборкой
-# -ServerArgs      Аргументы для сервера (default: COM10, ./data/temperature.db, 8080)
-#                  Параметры: <comPort> <databasePath> <httpPort>
-# -SensorArgs      Аргументы для сенсора (default: COM11, 20, 40, 1000, 100)
-#                  Параметры: <comPort> <minValue> <maxValue> <interval> <randomShift>
-#
-# Пример использования:
-# .\run.ps1 -Rebuild -ServerArgs COM10, "./data/temp.db", 8888
-# .\run.ps1 -SensorArgs COM11, 15, 35, 2000, 50
 
 $BuildDir = "build"
 $SensorExe = "sensor.exe"
 $ServerExe = "server.exe"
 
-# 1. Обновление репозитория
 if ($Pull) {
 
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
@@ -35,7 +23,6 @@ if ($Pull) {
     }
 }
 
-# 2. Проверка инструментов
 if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
     Write-Error "CMake не найден"
     exit 1
@@ -43,7 +30,6 @@ if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
 
 Write-Host "CMake found: $(cmake --version | Select-Object -First 1)"
 
-# 3. Сборка
 if ($Rebuild) {
     if (Test-Path $BuildDir) {
         Remove-Item -Recurse -Force $BuildDir
@@ -71,7 +57,6 @@ if ($Rebuild) {
 
 Set-Location $BuildDir
 
-# 4. Запуск
 $SensorExePath = Join-Path (Get-Location) $SensorExe
 $ServerExePath = Join-Path (Get-Location) $ServerExe
 

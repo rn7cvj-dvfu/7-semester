@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Параметры
+
 PULL=false
 REBUILD=false
 ARGS=()
 
-# Парсинг аргументов
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --pull)
@@ -26,7 +26,6 @@ done
 BUILD_DIR="build"
 EXE_NAME="lab2"
 
-# 1. Обновление репозитория
 if [ "$PULL" = true ]; then
 
     if ! command -v git &> /dev/null; then
@@ -40,7 +39,7 @@ if [ "$PULL" = true ]; then
     fi
 fi
 
-# 2. Проверка инструментов
+
 if ! command -v cmake &> /dev/null; then
     echo "Error: CMake не найден"
     exit 1
@@ -51,7 +50,7 @@ if ! command -v gcc &> /dev/null; then
     exit 1
 fi
 
-# 3. Сборка
+
 if [ "$REBUILD" = true ]; then
     if [ -d "$BUILD_DIR" ]; then
         rm -rf "$BUILD_DIR"
@@ -81,7 +80,7 @@ fi
 
 cd "$BUILD_DIR"
 
-# 4. Запуск
+
 EXE_PATH="./$EXE_NAME"
 
 if [ ! -f "$EXE_PATH" ]; then

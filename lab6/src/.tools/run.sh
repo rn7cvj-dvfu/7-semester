@@ -1,5 +1,4 @@
 #!/bin/bash
-# Unified build and run script for lab6 (Linux/macOS) with --pull and --rebuild support
 set -e
 
 PULL=0
@@ -8,7 +7,6 @@ EXE_NAME="temperature_monitor"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$SCRIPT_DIR/../build"
 
-# Parse arguments
 for arg in "$@"; do
     case $arg in
         --pull)
@@ -37,7 +35,6 @@ done
 MODE=${MODE:-run}
 cd "$SCRIPT_DIR"
 
-# 1. Pull repo if requested
 if [ $PULL -eq 1 ]; then
     if ! command -v git &> /dev/null; then
         echo "Error: git not found!" >&2
@@ -46,7 +43,6 @@ if [ $PULL -eq 1 ]; then
     git pull || echo "Warning: git pull failed (maybe no changes)"
 fi
 
-# 2. Build if requested
 if [ $REBUILD -eq 1 ]; then
     echo "================================"
     echo "Building Temperature Monitor GUI"
@@ -64,7 +60,6 @@ if [ $REBUILD -eq 1 ]; then
     cd "$SCRIPT_DIR"
 fi
 
-# 3. Run
 if [ "$MODE" = "run" ]; then
     echo "================================"
     echo "Temperature Monitor GUI"
