@@ -17,9 +17,9 @@ EOF
 
 sudo bash -c "cat > $KIOSK_HOME/.xsession" <<EOF
 #!/bin/bash
-xset -dpms      # Отключить энергосбережение
-xset s off      # Отключить скринсейвер
-xset s noblank  # Отключить затемнение экрана
+xset -dpms      
+xset s off     
+xset s noblank  
 $APP_PATH
 EOF
 sudo chown $KIOSK_USER:$KIOSK_USER $KIOSK_HOME/.xsession
