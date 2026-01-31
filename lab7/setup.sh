@@ -8,7 +8,7 @@ APP_PATH="/home/vboxuser/Projects/7-semester/lab6/src/build/temperature_monitor"
 # === 1. Создание пользователя ===
 sudo adduser --disabled-password --gecos "" $KIOSK_USER
 
-# === 2. Настройка автологина (LightDM) ===
+# === 2. Настройка LightDM ===
 sudo apt-get update
 sudo apt-get install -y lightdm xbindkeys
 # Отключить GDM (если установлен) и выбрать LightDM
@@ -19,9 +19,10 @@ sudo systemctl enable lightdm
 sudo systemctl start lightdm
 sudo bash -c "cat > /etc/lightdm/lightdm.conf" <<EOF
 [Seat:*]
-autologin-user=$KIOSK_USER
-autologin-user-timeout=0
+# autologin-user=$KIOSK_USER
+# autologin-user-timeout=0
 user-session=xsession
+greeter-hide-users=false
 EOF
 
 # === 3. Автозапуск приложения в X-сессии ===
