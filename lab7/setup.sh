@@ -15,7 +15,11 @@ sudo bash -c "cat > /etc/lightdm/lightdm.conf" <<EOF
 [Seat:*]
 autologin-user=$KIOSK_USER
 autologin-user-timeout=0
+<<<<<<< HEAD
 user-session=ubuntu
+=======
+user-session=xsession
+>>>>>>> 4606e3a4571c6d780adaf254646e6f4747e91b33
 EOF
 
 # === 3. Автозапуск приложения в X-сессии ===
