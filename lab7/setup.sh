@@ -10,16 +10,12 @@ sudo adduser --disabled-password --gecos "" $KIOSK_USER
 
 # === 2. Настройка автологина (LightDM) ===
 sudo apt-get update
-sudo apt-get install -y lightdm xbindkeys
+sudo apt-get install -y lightdm
 sudo bash -c "cat > /etc/lightdm/lightdm.conf" <<EOF
 [Seat:*]
 autologin-user=$KIOSK_USER
 autologin-user-timeout=0
-<<<<<<< HEAD
 user-session=ubuntu
-=======
-user-session=xsession
->>>>>>> 4606e3a4571c6d780adaf254646e6f4747e91b33
 EOF
 
 # === 3. Автозапуск приложения в X-сессии ===
@@ -28,22 +24,10 @@ sudo bash -c "cat > $KIOSK_HOME/.xsession" <<EOF
 xset -dpms      # Отключить энергосбережение
 xset s off      # Отключить скринсейвер
 xset s noblank  # Отключить затемнение экрана
-# Запуск xbindkeys для обработки Ctrl+Alt+Q
-if [ -f "$HOME/.xbindkeysrc" ]; then
-	xbindkeys &
-fi
 $APP_PATH
 EOF
 sudo chown $KIOSK_USER:$KIOSK_USER $KIOSK_HOME/.xsession
 sudo chmod +x $KIOSK_HOME/.xsession
-
-# === 3.5. Настройка выхода по Ctrl+Alt+Q ===
-sudo bash -c "cat > $KIOSK_HOME/.xbindkeysrc" <<EOF
-# Завершить X-сессию по Ctrl+Alt+Q
-\"pkill -KILL -u \$USER\"
-  control+alt+q
-EOF
-sudo chown $KIOSK_USER:$KIOSK_USER $KIOSK_HOME/.xbindkeysrc
 
 # === 4. Минимальная блокировка клавиш (Alt+Tab, Ctrl+Alt+Fx) ===
 sudo bash -c "cat > $KIOSK_HOME/.Xmodmap" <<EOF
