@@ -11,7 +11,9 @@ sudo adduser --disabled-password --gecos "" $KIOSK_USER
 # === 2. Настройка автологина (LightDM) ===
 sudo apt-get update
 sudo apt-get install -y lightdm xbindkeys
-# Выбрать LightDM как дисплей-менеджер
+# Отключить GDM (если установлен) и выбрать LightDM
+sudo systemctl disable gdm3 || true
+sudo systemctl stop gdm3 || true
 sudo dpkg-reconfigure -f noninteractive lightdm
 sudo systemctl enable lightdm
 sudo systemctl start lightdm
