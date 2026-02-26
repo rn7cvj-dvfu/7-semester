@@ -224,3 +224,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+lab7/UCSD_Anomaly_Dataset.v1p2
